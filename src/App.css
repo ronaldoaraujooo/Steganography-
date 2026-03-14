@@ -1,3 +1,5 @@
+/*Aviso : O css foi refatorado na I.A , então ... bem , é css */
+
 * {
   margin: 0;
   padding: 0;
@@ -18,7 +20,7 @@ body {
   background: #f3f4f6;
 }
 
-/* 🎯 NAVBAR FIXA 100% */
+/* NAVBAR FIXA 100% */
 .navbar {
   position: fixed;
   top: 0;
@@ -104,7 +106,6 @@ body {
   box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
-/* 🎯 STATS BAR - SPACE-EVENLY */
 .stats-bar {
   position: fixed;
   top: 64px;

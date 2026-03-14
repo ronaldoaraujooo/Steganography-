@@ -54,8 +54,7 @@ function App() {
     try {
       const encodedImageUrl = await Steganography.encode(selectedFile, secretText);
       
-      // Criar link para download
-      const link = document.createElement('a');
+            const link = document.createElement('a');
       link.href = encodedImageUrl;
       link.download = 'encoded_image.png';
       link.click();
@@ -139,7 +138,7 @@ function App() {
 
   return (
     <div className="app">
-      {/* NAVBAR */}
+      
       <nav className="navbar">
         <div className="logo-section">
           <div className="logo-icon">
@@ -171,24 +170,34 @@ function App() {
             <Unlock size={14} />
             Decode
           </button>
+      
         </div>
       </nav>
 
-      {/* STATS BAR */}
       <div className="stats-bar">
         <div className="stat-item">
+      
           <HardDrive size={24} />
+      
           <div className="stat-info">
+      
             <span className="stat-label">Image Size</span>
             <span className="stat-value">{selectedFile ? formatFileSize(selectedFile.size) : '0 KB'}</span>
+      
           </div>
+      
         </div>
         <div className="stat-item">
+      
           <Cpu size={24} />
+      
           <div className="stat-info">
+      
             <span className="stat-label">Capacity</span>
             <span className="stat-value">{capacity > 0 ? `${capacity} chars` : '0 chars'}</span>
+      
           </div>
+      
         </div>
         <div className="stat-item">
           <Key size={24} />
@@ -198,11 +207,16 @@ function App() {
           </div>
         </div>
         <div className="stat-item">
+      
           <MessageSquare size={24} />
+      
           <div className="stat-info">
+      
             <span className="stat-label">Message</span>
             <span className="stat-value">{secretText.length} chars</span>
+      
           </div>
+      
         </div>
         <div className="stat-item">
           <BarChart3 size={24} />
@@ -241,10 +255,15 @@ function App() {
             ) : (
               <div className="preview-container">
                 <div className="preview-header">
+                  
                   <span>📁 {selectedFile?.name}</span>
+                  
                   <button onClick={clearImage}>✕</button>
+                
                 </div>
+                
                 <div className="preview-image">
+                 
                   <img src={previewUrl} alt="Preview" />
                 </div>
               </div>
@@ -259,7 +278,7 @@ function App() {
             <h2>Output Console</h2>
           </div>
           <div className="card-content">
-            {/* Botão PRIMEIRO */}
+            {/* esse é o primeiro button ,  */}
             <button 
               className={`action-button ${activeTab}`}
               onClick={activeTab === 'encode' ? handleEncode : handleDecode}
@@ -279,26 +298,45 @@ function App() {
               )}
             </button>
 
-            {/* Input DEPOIS do botão - só aparece no encode */}
+            {/* Input DEPOIS do botão ( só aparece no encode ) */}
             {activeTab === 'encode' && previewUrl && (
+
               <div className="input-container">
+              
                 <div className="input-header">
+              
                   <label>
                     <MessageSquare size={14} />
                     Secret Message
                   </label>
+              
                   <span className={`char-count ${secretText.length > capacity ? 'text-red-500' : ''}`}>
                     {secretText.length} / {capacity}
                   </span>
+              
                 </div>
+              
                 <textarea
+                  
                   placeholder="Enter message to hide..."
                   value={secretText}
-                  onChange={(e) => setSecretText(e.target.value.slice(0, capacity))}
+                  onChange={
+                    (e) => setSecretText(
+                      e.target.value.slice(
+                        0, capacity
+                      )
+                    )}
+                
                   disabled={loading}
+                
                 />
                 {secretText.length > capacity && (
-                  <p style={{ color: '#ef4444', fontSize: '12px', padding: '8px 16px' }}>
+                  <p style={{ 
+                   // é só uma gambiarra   
+                    color: '#ef4444', 
+                      fontSize: '12px', 
+                      padding: '8px 16px' 
+                  }}>
                      Mensagem excede a capacidade da imagem
                   </p>
                 )}
