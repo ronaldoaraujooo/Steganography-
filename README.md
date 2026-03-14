@@ -2,11 +2,6 @@
 
 Steganography CMS - Esconda Mensagens em Imagens com LSB
 
-https://img.shields.io/badge/version-2.1.0-blue
-https://img.shields.io/badge/React-18.2.0-61dafb
-https://img.shields.io/badge/TypeScript-5.0.0-3178c6
-https://img.shields.io/badge/Vite-4.5.14-646cff
-https://img.shields.io/badge/license-MIT-green
 
 <div align="center"> <img src="public/demo.gif" alt="Demonstração do Steganography CMS" width="600"/> <p><em>Interface moderna e responsiva para esconder mensagens em imagens usando técnica LSB</em></p> </div>
 
@@ -82,10 +77,13 @@ A mensagem aparecerá num popup bonitão
 <h1>Exemplo prático</h1>
 
 // Código de exemplo para testar
+<br/>
 const mensagem = "Parabéns! Você achou a mensagem";
+<br/>
 const imagem = await Steganography.encode(arquivo, mensagem);
+<br/>
 // Sua mensagem está escondida!
-
+<br/>
 Roadmap
 Suporte a JPG (com algoritmos adaptativos)
 
@@ -111,7 +109,7 @@ Push (git push origin feature/nova-feature)
 Abra um Pull Request
 
 
-<div align="center"> <p>Feito com ☕ e ❤️ para ensinar segurança digital</p> <p>⚠️ <strong>Aviso:</strong> Use apenas para fins educacionais e legais</p> </div> ```
+<div align="center"> <p>Feito com ☕ e ❤️ para ensinar segurança digital</p> <p><strong>Aviso:</strong> Use apenas para fins educacionais e legais</p> </div> ```
 
 ![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
 ![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
@@ -120,6 +118,6 @@ Abra um Pull Request
 ![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)
 
 <div align="center">
-  <img src="screenshot.png" alt="Steganography CMS em ação" width="800"/>
+  <img  alt="Steganography CMS em ação" width="800"/>
   <p><em>Interface limpa e profissional - modo escuro incluso!</em></p>
 </div>
