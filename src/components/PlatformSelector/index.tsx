@@ -25,7 +25,7 @@ export const PlatformSelector: React.FC<PlatformSelectorProps> = ({
   return (
     <div className={styles.container}>
       <label className={styles.label}>
-        <span>📱 Onde você vai enviar?</span>
+        <span>Onde você vai enviar?</span>
         <div className={styles.selector} onClick={() => setIsOpen(!isOpen)}>
           <span className={styles.selectedIcon}>{selectedConfig.icon}</span>
           <span className={styles.selectedName}>{selectedConfig.name}</span>

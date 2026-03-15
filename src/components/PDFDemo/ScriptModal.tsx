@@ -23,7 +23,7 @@ export const ScriptModal: React.FC<ScriptModalProps> = ({ onClose, onInject }) =
         name: 'Alerta de Boas-vindas',
         code: `// Mensagem ao abrir o PDF
 app.alert({
-  cMsg: "👋 Obrigado por visualizar meu currículo!\\n\\n" +
+  cMsg: "Obrigado por visualizar meu currículo!\\n\\n" +
         "Este PDF contém JavaScript educacional.",
   cTitle: "Currículo Interativo",
   nIcon: 3
@@ -64,7 +64,7 @@ End Sub`
   };
 
   const handleTestScript = () => {
-    alert('🔬 Simulação de execução\n\n' + code.substring(0, 200) + '...');
+    alert('Simulação de execução\n\n' + code.substring(0, 200) + '...');
   };
 
   const getIcon = () => {
