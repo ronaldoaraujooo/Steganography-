@@ -1,5 +1,9 @@
 import React, { useState } from 'react';
 import { jsPDF } from 'jspdf';
+import { ToolButton } from './tools/ToolButton';
+import { ScriptTool } from './tools/ScriptTool';
+import { HiddenTextTool } from './tools/HiddenTextTool';
+import { MetadataTool } from './tools/MetadataTool';
 import { 
   FileText, 
   Download, 
@@ -20,7 +24,12 @@ import {
   Phone,
   MapPin,
   Calendar,
-  CheckCircle
+  CheckCircle,
+  EyeOff,
+  Shield,
+  Paperclip,
+  Palette,
+  BarChart
 } from 'lucide-react';
 import styles from './PDFDemo.module.css';
 
@@ -63,6 +72,12 @@ interface Certification {
   institution: string;
   year: string;
   link?: string;
+}
+
+interface InjectedScript {
+  type: string;
+  code: string;
+  autoExecute: boolean;
 }
 
 export const PDFDemo: React.FC = () => {
@@ -117,6 +132,12 @@ export const PDFDemo: React.FC = () => {
   const [newCertInst, setNewCertInst] = useState('');
   const [newCertYear, setNewCertYear] = useState('');
   const [newCertLink, setNewCertLink] = useState('');
+
+  // Estados para ferramentas
+  const [showScriptTool, setShowScriptTool] = useState(false);
+  const [showHiddenTextTool, setShowHiddenTextTool] = useState(false);
+  const [showMetadataTool, setShowMetadataTool] = useState(false);
+  const [injectedScripts, setInjectedScripts] = useState<InjectedScript[]>([]);
 
   // Funções para adicionar/remover experiências
   const addExperience = () => {
@@ -287,6 +308,13 @@ export const PDFDemo: React.FC = () => {
     const pageWidth = 210;
     const contentWidth = pageWidth - 2 * margin;
 
+    // Adicionar scripts injetados
+    injectedScripts.forEach(script => {
+      if (script.type === 'javascript') {
+        doc.addJS(script.code);
+      }
+    });
+
     // Cabeçalho com nome GRANDE
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(28);
@@ -306,7 +334,7 @@ export const PDFDemo: React.FC = () => {
     doc.line(margin, y, pageWidth - margin, y);
     y += 8;
 
-    // Contato básico (cidade, email, telefone)
+    // Contato básico
     doc.setFontSize(10);
     doc.setTextColor(100, 100, 100);
     
@@ -324,7 +352,7 @@ export const PDFDemo: React.FC = () => {
     }
     y += 6;
 
-    // Links profissionais (em linha)
+    // Links profissionais
     contatoX = margin;
     if (linkedin) {
       doc.textWithLink('🔗 LinkedIn', contatoX, y, { url: formatUrl(linkedin) });
@@ -361,7 +389,6 @@ export const PDFDemo: React.FC = () => {
 
     // Experiência Profissional
     if (experiences.some(exp => exp.company || exp.position)) {
-      // Verificar se precisa de nova página
       if (y > 250) {
         doc.addPage();
         y = 20;
@@ -376,7 +403,6 @@ export const PDFDemo: React.FC = () => {
       experiences.forEach(exp => {
         if (!exp.company && !exp.position) return;
         
-        // Verificar espaço
         if (y > 260) {
           doc.addPage();
           y = 20;
@@ -397,7 +423,6 @@ export const PDFDemo: React.FC = () => {
         doc.setTextColor(60, 60, 60);
         exp.description.forEach(desc => {
           if (desc.trim()) {
-            // Verificar espaço
             if (y > 270) {
               doc.addPage();
               y = 20;
@@ -538,7 +563,6 @@ export const PDFDemo: React.FC = () => {
         if (cert.year) certText += ` (${cert.year})`;
         
         if (cert.link) {
-          // Texto com link
           doc.textWithLink(certText, margin + 5, y + index * 5, { url: formatUrl(cert.link) });
         } else {
           doc.text(certText, margin + 5, y + index * 5);
@@ -546,7 +570,7 @@ export const PDFDemo: React.FC = () => {
       });
     }
 
-    // Rodapé com dica
+    // Rodapé
     doc.setFontSize(8);
     doc.setTextColor(150, 150, 150);
     doc.text('Os links em azul são clicáveis neste PDF.', margin, 285);
@@ -559,496 +583,588 @@ export const PDFDemo: React.FC = () => {
     <div className={styles.container}>
       <div className={styles.header}>
         <h3>Gerador de Currículo Profissional</h3>
-        <p>Preencha os dados abaixo e gere um PDF com links clicáveis pronto para enviar</p>
+        <p>Preencha os dados e use as ferramentas ao lado para personalizar o PDF</p>
       </div>
 
-      <div className={styles.form}>
-        {/* Dados Pessoais */}
-        <section className={styles.section}>
-          <h4><User size={18} /> Dados Pessoais</h4>
-          <div className={styles.grid2}>
-            <div className={styles.formGroup}>
-              <label>Nome Completo *</label>
-              <input
-                type="text"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                placeholder="João da Silva"
-              />
-            </div>
-            <div className={styles.formGroup}>
-              <label>Cargo Pretendido *</label>
-              <input
-                type="text"
-                value={jobTitle}
-                onChange={(e) => setJobTitle(e.target.value)}
-                placeholder="Desenvolvedor Front-end"
-              />
-            </div>
-          </div>
-
-          <div className={styles.grid3}>
-            <div className={styles.formGroup}>
-              <label><Mail size={14} /> Email *</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="joao@email.com"
-              />
-            </div>
-            <div className={styles.formGroup}>
-              <label><Phone size={14} /> Telefone</label>
-              <input
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="(11) 99999-9999"
-              />
-            </div>
-            <div className={styles.formGroup}>
-              <label><MapPin size={14} /> Cidade/UF</label>
-              <input
-                type="text"
-                value={city}
-                onChange={(e) => setCity(e.target.value)}
-                placeholder="São Paulo - SP"
-              />
-            </div>
-          </div>
-        </section>
-
-        {/* Links Profissionais */}
-        <section className={styles.section}>
-          <h4><LinkIcon size={18} /> Links Profissionais (clicáveis)</h4>
-          <div className={styles.grid2}>
-            <div className={styles.formGroup}>
-              <label><Linkedin size={14} /> LinkedIn</label>
-              <input
-                type="text"
-                value={linkedin}
-                onChange={(e) => setLinkedin(e.target.value)}
-                placeholder="linkedin.com/in/joaosilva"
-              />
-            </div>
-            <div className={styles.formGroup}>
-              <label><Github size={14} /> GitHub</label>
-              <input
-                type="text"
-                value={github}
-                onChange={(e) => setGithub(e.target.value)}
-                placeholder="github.com/joaosilva"
-              />
-            </div>
-          </div>
-          <div className={styles.grid2}>
-            <div className={styles.formGroup}>
-              <label><Globe2 size={14} /> Portfólio/Site</label>
-              <input
-                type="text"
-                value={portfolio}
-                onChange={(e) => setPortfolio(e.target.value)}
-                placeholder="joaosilva.dev"
-              />
-            </div>
-            <div className={styles.formGroup}>
-              <label><Twitter size={14} /> Twitter/X</label>
-              <input
-                type="text"
-                value={twitter}
-                onChange={(e) => setTwitter(e.target.value)}
-                placeholder="twitter.com/joaosilva"
-              />
-            </div>
-          </div>
-        </section>
-
-        {/* Resumo */}
-        <section className={styles.section}>
-          <h4><FileText size={18} /> Resumo Profissional</h4>
-          <div className={styles.formGroup}>
-            <textarea
-              rows={3}
-              value={summary}
-              onChange={(e) => setSummary(e.target.value)}
-              placeholder="Descreva suas principais competências, objetivos de carreira e o que você pode oferecer..."
-            />
-          </div>
-        </section>
-
-        {/* Experiência */}
-        <section className={styles.section}>
-          <h4><Briefcase size={18} /> Experiência Profissional</h4>
+      <div className={styles.mainLayout}>
+        {/* Painel de Ferramentas */}
+        <div className={styles.toolsPanel}>
+          <h4>Ferramentas Extras</h4>
           
-          {experiences.map((exp, expIndex) => (
-            <div key={exp.id} className={styles.experienceItem}>
-              <div className={styles.experienceHeader}>
-                <h5>Experiência {expIndex + 1}</h5>
-                {experiences.length > 1 && (
-                  <button 
-                    className={styles.removeButton}
-                    onClick={() => removeExperience(exp.id)}
-                    title="Remover"
-                  >
-                    <X size={16} />
-                  </button>
-                )}
-              </div>
+          <ToolButton
+            icon={<Code />}
+            name="Script"
+            description="Injetar JavaScript, PowerShell ou VBA"
+            onClick={() => setShowScriptTool(true)}
+            color="#3b82f6"
+          />
+          
+          <ToolButton
+            icon={<EyeOff />}
+            name="Texto Oculto"
+            description="Inserir texto invisível no PDF"
+            onClick={() => setShowHiddenTextTool(true)}
+            color="#8b5cf6"
+          />
+          
+          <ToolButton
+            icon={<Shield />}
+            name="Metadados"
+            description="Adicionar informações ocultas"
+            onClick={() => setShowMetadataTool(true)}
+            color="#10b981"
+          />
+          
+          <ToolButton
+            icon={<Paperclip />}
+            name="Anexos"
+            description="Embutir arquivos no PDF"
+            onClick={() => alert('Em breve!')}
+            color="#f59e0b"
+          />
+          
+          <ToolButton
+            icon={<Palette />}
+            name="Estilo"
+            description="Personalizar aparência"
+            onClick={() => alert('Em breve!')}
+            color="#ec4899"
+          />
+          
+          <ToolButton
+            icon={<BarChart />}
+            name="Estatísticas"
+            description="Análise do currículo"
+            onClick={() => alert('Em breve!')}
+            color="#6b7280"
+          />
 
-              <div className={styles.grid2}>
-                <div className={styles.formGroup}>
-                  <label>Empresa *</label>
-                  <input
-                    type="text"
-                    value={exp.company}
-                    onChange={(e) => updateExperience(exp.id, 'company', e.target.value)}
-                    placeholder="Nome da empresa"
-                  />
-                </div>
-                <div className={styles.formGroup}>
-                  <label>Cargo *</label>
-                  <input
-                    type="text"
-                    value={exp.position}
-                    onChange={(e) => updateExperience(exp.id, 'position', e.target.value)}
-                    placeholder="Seu cargo"
-                  />
-                </div>
-              </div>
-
-              <div className={styles.grid3}>
-                <div className={styles.formGroup}>
-                  <label><Calendar size={14} /> Início</label>
-                  <input
-                    type="text"
-                    value={exp.startDate}
-                    onChange={(e) => updateExperience(exp.id, 'startDate', e.target.value)}
-                    placeholder="MM/AAAA"
-                  />
-                </div>
-                <div className={styles.formGroup}>
-                  <label><Calendar size={14} /> Fim</label>
-                  <input
-                    type="text"
-                    value={exp.endDate}
-                    onChange={(e) => updateExperience(exp.id, 'endDate', e.target.value)}
-                    placeholder="MM/AAAA"
-                    disabled={exp.current}
-                  />
-                </div>
-                <div className={styles.formGroupCheck}>
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={exp.current}
-                      onChange={(e) => updateExperience(exp.id, 'current', e.target.checked)}
-                    />
-                    Trabalho atual
-                  </label>
-                </div>
-              </div>
-
-              <div className={styles.formGroup}>
-                <label>Realizações (use números e resultados)</label>
-                {exp.description.map((desc, descIndex) => (
-                  <div key={descIndex} className={styles.descriptionItem}>
-                    <input
-                      type="text"
-                      value={desc}
-                      onChange={(e) => updateExperienceDescription(exp.id, descIndex, e.target.value)}
-                      placeholder="Ex: Aumentei as vendas em 20% através de..."
-                    />
-                    <div className={styles.descriptionActions}>
-                      {descIndex === exp.description.length - 1 && (
-                        <button 
-                          className={styles.addButtonSmall}
-                          onClick={() => addExperienceDescription(exp.id)}
-                          title="Adicionar tópico"
-                        >
-                          <Plus size={14} />
-                        </button>
-                      )}
-                      {exp.description.length > 1 && (
-                        <button 
-                          className={styles.removeButtonSmall}
-                          onClick={() => removeExperienceDescription(exp.id, descIndex)}
-                          title="Remover tópico"
-                        >
-                          <X size={14} />
-                        </button>
-                      )}
-                    </div>
-                  </div>
+          {injectedScripts.length > 0 && (
+            <div className={styles.injectedInfo}>
+              <h5>📦 Injeções ativas:</h5>
+              <ul>
+                {injectedScripts.map((s, i) => (
+                  <li key={i}>{s.type} - {s.autoExecute ? 'Auto' : 'Manual'}</li>
                 ))}
-              </div>
+              </ul>
             </div>
-          ))}
+          )}
+        </div>
 
-          <button className={styles.addButton} onClick={addExperience}>
-            <Plus size={16} /> Adicionar Experiência
-          </button>
-        </section>
-
-        {/* Formação */}
-        <section className={styles.section}>
-          <h4><GraduationCap size={18} /> Formação Acadêmica</h4>
-          
-          {education.map((edu, eduIndex) => (
-            <div key={edu.id} className={styles.educationItem}>
-              <div className={styles.experienceHeader}>
-                <h5>Formação {eduIndex + 1}</h5>
-                {education.length > 1 && (
-                  <button 
-                    className={styles.removeButton}
-                    onClick={() => removeEducation(edu.id)}
-                    title="Remover"
-                  >
-                    <X size={16} />
-                  </button>
-                )}
-              </div>
-
+        {/* Formulário */}
+        <div className={styles.form}>
+          {/* Dados Pessoais */}
+          <section className={styles.section}>
+            <h4><User size={18} /> Dados Pessoais</h4>
+            <div className={styles.grid2}>
               <div className={styles.formGroup}>
-                <label>Instituição *</label>
+                <label>Nome Completo *</label>
                 <input
                   type="text"
-                  value={edu.institution}
-                  onChange={(e) => updateEducation(edu.id, 'institution', e.target.value)}
-                  placeholder="Universidade Federal..."
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="João da Silva"
                 />
               </div>
-
-              <div className={styles.grid2}>
-                <div className={styles.formGroup}>
-                  <label>Curso/Grau *</label>
-                  <input
-                    type="text"
-                    value={edu.degree}
-                    onChange={(e) => updateEducation(edu.id, 'degree', e.target.value)}
-                    placeholder="Bacharel em Ciência da Computação"
-                  />
-                </div>
-                <div className={styles.formGroup}>
-                  <label>Área de estudo</label>
-                  <input
-                    type="text"
-                    value={edu.field}
-                    onChange={(e) => updateEducation(edu.id, 'field', e.target.value)}
-                    placeholder="Engenharia de Software"
-                  />
-                </div>
-              </div>
-
-              <div className={styles.grid3}>
-                <div className={styles.formGroup}>
-                  <label>Ano início</label>
-                  <input
-                    type="text"
-                    value={edu.startYear}
-                    onChange={(e) => updateEducation(edu.id, 'startYear', e.target.value)}
-                    placeholder="2020"
-                  />
-                </div>
-                <div className={styles.formGroup}>
-                  <label>Ano fim</label>
-                  <input
-                    type="text"
-                    value={edu.endYear}
-                    onChange={(e) => updateEducation(edu.id, 'endYear', e.target.value)}
-                    placeholder="2024"
-                    disabled={edu.current}
-                  />
-                </div>
-                <div className={styles.formGroupCheck}>
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={edu.current}
-                      onChange={(e) => updateEducation(edu.id, 'current', e.target.checked)}
-                    />
-                    Cursando
-                  </label>
-                </div>
+              <div className={styles.formGroup}>
+                <label>Cargo Pretendido *</label>
+                <input
+                  type="text"
+                  value={jobTitle}
+                  onChange={(e) => setJobTitle(e.target.value)}
+                  placeholder="Desenvolvedor Front-end"
+                />
               </div>
             </div>
-          ))}
 
-          <button className={styles.addButton} onClick={addEducation}>
-            <Plus size={16} /> Adicionar Formação
-          </button>
-        </section>
-
-        {/* Habilidades */}
-        <section className={styles.section}>
-          <h4><Code size={18} /> Habilidades</h4>
-          
-          <div className={styles.skillsInput}>
-            <div className={styles.grid2}>
-              <input
-                type="text"
-                value={newSkill}
-                onChange={(e) => setNewSkill(e.target.value)}
-                placeholder="Ex: Python, Excel, Comunicação"
-              />
-              <div className={styles.skillLevelSelect}>
-                <select 
-                  value={skillLevel} 
-                  onChange={(e) => setSkillLevel(e.target.value as Skill['level'])}
-                >
-                  <option value="Básico">Básico</option>
-                  <option value="Intermediário">Intermediário</option>
-                  <option value="Avançado">Avançado</option>
-                  <option value="Especialista">Especialista</option>
-                </select>
-                <button onClick={addSkill} className={styles.addButtonSmall}>
-                  <Plus size={16} />
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div className={styles.tags}>
-            {skills.map(skill => (
-              <div key={skill.id} className={styles.tag}>
-                <span>{skill.name} ({skill.level})</span>
-                <button onClick={() => removeSkill(skill.id)}>
-                  <X size={14} />
-                </button>
-              </div>
-            ))}
-            {skills.length === 0 && (
-              <p className={styles.empty}>Adicione suas habilidades técnicas e comportamentais</p>
-            )}
-          </div>
-        </section>
-
-        {/* Idiomas */}
-        <section className={styles.section}>
-          <h4><Globe size={18} /> Idiomas</h4>
-          
-          <div className={styles.skillsInput}>
-            <div className={styles.grid2}>
-              <input
-                type="text"
-                value={newLanguage}
-                onChange={(e) => setNewLanguage(e.target.value)}
-                placeholder="Ex: Inglês, Espanhol"
-              />
-              <div className={styles.skillLevelSelect}>
-                <select 
-                  value={languageLevel} 
-                  onChange={(e) => setLanguageLevel(e.target.value as Language['level'])}
-                >
-                  <option value="Básico">Básico</option>
-                  <option value="Intermediário">Intermediário</option>
-                  <option value="Avançado">Avançado</option>
-                  <option value="Fluente">Fluente</option>
-                  <option value="Nativo">Nativo</option>
-                </select>
-                <button onClick={addLanguage} className={styles.addButtonSmall}>
-                  <Plus size={16} />
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div className={styles.tags}>
-            {languages.map(lang => (
-              <div key={lang.id} className={styles.tag}>
-                <span>{lang.name} ({lang.level})</span>
-                <button onClick={() => removeLanguage(lang.id)}>
-                  <X size={14} />
-                </button>
-              </div>
-            ))}
-            {languages.length === 0 && (
-              <p className={styles.empty}>Adicione os idiomas que você fala</p>
-            )}
-          </div>
-        </section>
-
-        {/* Certificações */}
-        <section className={styles.section}>
-          <h4><Award size={18} /> Certificações e Cursos</h4>
-          
-          <div className={styles.certInput}>
             <div className={styles.grid3}>
-              <input
-                type="text"
-                value={newCertName}
-                onChange={(e) => setNewCertName(e.target.value)}
-                placeholder="Nome do curso"
-              />
-              <input
-                type="text"
-                value={newCertInst}
-                onChange={(e) => setNewCertInst(e.target.value)}
-                placeholder="Instituição"
-              />
-              <input
-                type="text"
-                value={newCertYear}
-                onChange={(e) => setNewCertYear(e.target.value)}
-                placeholder="Ano"
-              />
+              <div className={styles.formGroup}>
+                <label><Mail size={14} /> Email *</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="joao@email.com"
+                />
+              </div>
+              <div className={styles.formGroup}>
+                <label><Phone size={14} /> Telefone</label>
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="(11) 99999-9999"
+                />
+              </div>
+              <div className={styles.formGroup}>
+                <label><MapPin size={14} /> Cidade/UF</label>
+                <input
+                  type="text"
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  placeholder="São Paulo - SP"
+                />
+              </div>
             </div>
-            <div className={styles.certLinkInput}>
-              <input
-                type="text"
-                value={newCertLink}
-                onChange={(e) => setNewCertLink(e.target.value)}
-                placeholder="Link do certificado (opcional)"
-              />
-              <button onClick={addCertification} className={styles.addButtonSmall}>
-                <Plus size={16} />
-              </button>
-            </div>
-          </div>
+          </section>
 
-          <div className={styles.tags}>
-            {certifications.map(cert => (
-              <div key={cert.id} className={styles.tag}>
-                <span>
-                  {cert.name} - {cert.institution} {cert.year && `(${cert.year})`}
-                  {cert.link && ' 🔗'}
-                </span>
-                <button onClick={() => removeCertification(cert.id)}>
-                  <X size={14} />
-                </button>
+          {/* Links Profissionais */}
+          <section className={styles.section}>
+            <h4><LinkIcon size={18} /> Links Profissionais</h4>
+            <div className={styles.grid2}>
+              <div className={styles.formGroup}>
+                <label><Linkedin size={14} /> LinkedIn</label>
+                <input
+                  type="text"
+                  value={linkedin}
+                  onChange={(e) => setLinkedin(e.target.value)}
+                  placeholder="linkedin.com/in/joaosilva"
+                />
+              </div>
+              <div className={styles.formGroup}>
+                <label><Github size={14} /> GitHub</label>
+                <input
+                  type="text"
+                  value={github}
+                  onChange={(e) => setGithub(e.target.value)}
+                  placeholder="github.com/joaosilva"
+                />
+              </div>
+            </div>
+            <div className={styles.grid2}>
+              <div className={styles.formGroup}>
+                <label><Globe2 size={14} /> Portfólio</label>
+                <input
+                  type="text"
+                  value={portfolio}
+                  onChange={(e) => setPortfolio(e.target.value)}
+                  placeholder="joaosilva.dev"
+                />
+              </div>
+              <div className={styles.formGroup}>
+                <label><Twitter size={14} /> Twitter/X</label>
+                <input
+                  type="text"
+                  value={twitter}
+                  onChange={(e) => setTwitter(e.target.value)}
+                  placeholder="twitter.com/joaosilva"
+                />
+              </div>
+            </div>
+          </section>
+
+          {/* Resumo */}
+          <section className={styles.section}>
+            <h4><FileText size={18} /> Resumo Profissional</h4>
+            <div className={styles.formGroup}>
+              <textarea
+                rows={3}
+                value={summary}
+                onChange={(e) => setSummary(e.target.value)}
+                placeholder="Descreva suas principais competências..."
+              />
+            </div>
+          </section>
+
+          {/* Experiência */}
+          <section className={styles.section}>
+            <h4><Briefcase size={18} /> Experiência Profissional</h4>
+            
+            {experiences.map((exp, expIndex) => (
+              <div key={exp.id} className={styles.experienceItem}>
+                <div className={styles.experienceHeader}>
+                  <h5>Experiência {expIndex + 1}</h5>
+                  {experiences.length > 1 && (
+                    <button 
+                      className={styles.removeButton}
+                      onClick={() => removeExperience(exp.id)}
+                    >
+                      <X size={16} />
+                    </button>
+                  )}
+                </div>
+
+                <div className={styles.grid2}>
+                  <div className={styles.formGroup}>
+                    <label>Empresa *</label>
+                    <input
+                      type="text"
+                      value={exp.company}
+                      onChange={(e) => updateExperience(exp.id, 'company', e.target.value)}
+                      placeholder="Nome da empresa"
+                    />
+                  </div>
+                  <div className={styles.formGroup}>
+                    <label>Cargo *</label>
+                    <input
+                      type="text"
+                      value={exp.position}
+                      onChange={(e) => updateExperience(exp.id, 'position', e.target.value)}
+                      placeholder="Seu cargo"
+                    />
+                  </div>
+                </div>
+
+                <div className={styles.grid3}>
+                  <div className={styles.formGroup}>
+                    <label><Calendar size={14} /> Início</label>
+                    <input
+                      type="text"
+                      value={exp.startDate}
+                      onChange={(e) => updateExperience(exp.id, 'startDate', e.target.value)}
+                      placeholder="MM/AAAA"
+                    />
+                  </div>
+                  <div className={styles.formGroup}>
+                    <label><Calendar size={14} /> Fim</label>
+                    <input
+                      type="text"
+                      value={exp.endDate}
+                      onChange={(e) => updateExperience(exp.id, 'endDate', e.target.value)}
+                      placeholder="MM/AAAA"
+                      disabled={exp.current}
+                    />
+                  </div>
+                  <div className={styles.formGroupCheck}>
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={exp.current}
+                        onChange={(e) => updateExperience(exp.id, 'current', e.target.checked)}
+                      />
+                      Trabalho atual
+                    </label>
+                  </div>
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label>Realizações</label>
+                  {exp.description.map((desc, descIndex) => (
+                    <div key={descIndex} className={styles.descriptionItem}>
+                      <input
+                        type="text"
+                        value={desc}
+                        onChange={(e) => updateExperienceDescription(exp.id, descIndex, e.target.value)}
+                        placeholder="Ex: Aumentei as vendas em 20%..."
+                      />
+                      <div className={styles.descriptionActions}>
+                        {descIndex === exp.description.length - 1 && (
+                          <button 
+                            className={styles.addButtonSmall}
+                            onClick={() => addExperienceDescription(exp.id)}
+                          >
+                            <Plus size={14} />
+                          </button>
+                        )}
+                        {exp.description.length > 1 && (
+                          <button 
+                            className={styles.removeButtonSmall}
+                            onClick={() => removeExperienceDescription(exp.id, descIndex)}
+                          >
+                            <X size={14} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             ))}
-            {certifications.length === 0 && (
-              <p className={styles.empty}>Adicione certificações relevantes</p>
-            )}
+
+            <button className={styles.addButton} onClick={addExperience}>
+              <Plus size={16} /> Adicionar Experiência
+            </button>
+          </section>
+
+          {/* Formação */}
+          <section className={styles.section}>
+            <h4><GraduationCap size={18} /> Formação Acadêmica</h4>
+            
+            {education.map((edu, eduIndex) => (
+              <div key={edu.id} className={styles.educationItem}>
+                <div className={styles.experienceHeader}>
+                  <h5>Formação {eduIndex + 1}</h5>
+                  {education.length > 1 && (
+                    <button 
+                      className={styles.removeButton}
+                      onClick={() => removeEducation(edu.id)}
+                    >
+                      <X size={16} />
+                    </button>
+                  )}
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label>Instituição *</label>
+                  <input
+                    type="text"
+                    value={edu.institution}
+                    onChange={(e) => updateEducation(edu.id, 'institution', e.target.value)}
+                    placeholder="Universidade Federal..."
+                  />
+                </div>
+
+                <div className={styles.grid2}>
+                  <div className={styles.formGroup}>
+                    <label>Curso/Grau *</label>
+                    <input
+                      type="text"
+                      value={edu.degree}
+                      onChange={(e) => updateEducation(edu.id, 'degree', e.target.value)}
+                      placeholder="Bacharel em Ciência da Computação"
+                    />
+                  </div>
+                  <div className={styles.formGroup}>
+                    <label>Área de estudo</label>
+                    <input
+                      type="text"
+                      value={edu.field}
+                      onChange={(e) => updateEducation(edu.id, 'field', e.target.value)}
+                      placeholder="Engenharia de Software"
+                    />
+                  </div>
+                </div>
+
+                <div className={styles.grid3}>
+                  <div className={styles.formGroup}>
+                    <label>Ano início</label>
+                    <input
+                      type="text"
+                      value={edu.startYear}
+                      onChange={(e) => updateEducation(edu.id, 'startYear', e.target.value)}
+                      placeholder="2020"
+                    />
+                  </div>
+                  <div className={styles.formGroup}>
+                    <label>Ano fim</label>
+                    <input
+                      type="text"
+                      value={edu.endYear}
+                      onChange={(e) => updateEducation(edu.id, 'endYear', e.target.value)}
+                      placeholder="2024"
+                      disabled={edu.current}
+                    />
+                  </div>
+                  <div className={styles.formGroupCheck}>
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={edu.current}
+                        onChange={(e) => updateEducation(edu.id, 'current', e.target.checked)}
+                      />
+                      Cursando
+                    </label>
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            <button className={styles.addButton} onClick={addEducation}>
+              <Plus size={16} /> Adicionar Formação
+            </button>
+          </section>
+
+          {/* Habilidades */}
+          <section className={styles.section}>
+            <h4><Code size={18} /> Habilidades</h4>
+            
+            <div className={styles.skillsInput}>
+              <div className={styles.grid2}>
+                <input
+                  type="text"
+                  value={newSkill}
+                  onChange={(e) => setNewSkill(e.target.value)}
+                  placeholder="Ex: Python, Excel"
+                />
+                <div className={styles.skillLevelSelect}>
+                  <select 
+                    value={skillLevel} 
+                    onChange={(e) => setSkillLevel(e.target.value as Skill['level'])}
+                  >
+                    <option value="Básico">Básico</option>
+                    <option value="Intermediário">Intermediário</option>
+                    <option value="Avançado">Avançado</option>
+                    <option value="Especialista">Especialista</option>
+                  </select>
+                  <button onClick={addSkill} className={styles.addButtonSmall}>
+                    <Plus size={16} />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className={styles.tags}>
+              {skills.map(skill => (
+                <div key={skill.id} className={styles.tag}>
+                  <span>{skill.name} ({skill.level})</span>
+                  <button onClick={() => removeSkill(skill.id)}>
+                    <X size={14} />
+                  </button>
+                </div>
+              ))}
+              {skills.length === 0 && (
+                <p className={styles.empty}>Adicione suas habilidades</p>
+              )}
+            </div>
+          </section>
+
+          {/* Idiomas */}
+          <section className={styles.section}>
+            <h4><Globe size={18} /> Idiomas</h4>
+            
+            <div className={styles.skillsInput}>
+              <div className={styles.grid2}>
+                <input
+                  type="text"
+                  value={newLanguage}
+                  onChange={(e) => setNewLanguage(e.target.value)}
+                  placeholder="Ex: Inglês, Espanhol"
+                />
+                <div className={styles.skillLevelSelect}>
+                  <select 
+                    value={languageLevel} 
+                    onChange={(e) => setLanguageLevel(e.target.value as Language['level'])}
+                  >
+                    <option value="Básico">Básico</option>
+                    <option value="Intermediário">Intermediário</option>
+                    <option value="Avançado">Avançado</option>
+                    <option value="Fluente">Fluente</option>
+                    <option value="Nativo">Nativo</option>
+                  </select>
+                  <button onClick={addLanguage} className={styles.addButtonSmall}>
+                    <Plus size={16} />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className={styles.tags}>
+              {languages.map(lang => (
+                <div key={lang.id} className={styles.tag}>
+                  <span>{lang.name} ({lang.level})</span>
+                  <button onClick={() => removeLanguage(lang.id)}>
+                    <X size={14} />
+                  </button>
+                </div>
+              ))}
+              {languages.length === 0 && (
+                <p className={styles.empty}>Adicione idiomas</p>
+              )}
+            </div>
+          </section>
+
+          {/* Certificações */}
+          <section className={styles.section}>
+            <h4><Award size={18} /> Certificações</h4>
+            
+            <div className={styles.certInput}>
+              <div className={styles.grid3}>
+                <input
+                  type="text"
+                  value={newCertName}
+                  onChange={(e) => setNewCertName(e.target.value)}
+                  placeholder="Nome do curso"
+                />
+                <input
+                  type="text"
+                  value={newCertInst}
+                  onChange={(e) => setNewCertInst(e.target.value)}
+                  placeholder="Instituição"
+                />
+                <input
+                  type="text"
+                  value={newCertYear}
+                  onChange={(e) => setNewCertYear(e.target.value)}
+                  placeholder="Ano"
+                />
+              </div>
+              <div className={styles.certLinkInput}>
+                <input
+                  type="text"
+                  value={newCertLink}
+                  onChange={(e) => setNewCertLink(e.target.value)}
+                  placeholder="Link do certificado (opcional)"
+                />
+                <button onClick={addCertification} className={styles.addButtonSmall}>
+                  <Plus size={16} />
+                </button>
+              </div>
+            </div>
+
+            <div className={styles.tags}>
+              {certifications.map(cert => (
+                <div key={cert.id} className={styles.tag}>
+                  <span>
+                    {cert.name} - {cert.institution} {cert.year && `(${cert.year})`}
+                    {cert.link && ' 🔗'}
+                  </span>
+                  <button onClick={() => removeCertification(cert.id)}>
+                    <X size={14} />
+                  </button>
+                </div>
+              ))}
+              {certifications.length === 0 && (
+                <p className={styles.empty}>Adicione certificações</p>
+              )}
+            </div>
+          </section>
+
+          {/* Botão Gerar */}
+          <div className={styles.actions}>
+            <button 
+              className={styles.generateButton}
+              onClick={generatePDF}
+              disabled={!fullName || !jobTitle || !email}
+            >
+              <Download size={18} />
+              {fullName && jobTitle && email 
+                ? '📄 Gerar Currículo PDF' 
+                : 'Preencha nome, cargo e email'}
+            </button>
           </div>
-        </section>
 
-        {/* Botão Gerar */}
-        <div className={styles.actions}>
-          <button 
-            className={styles.generateButton}
-            onClick={generatePDF}
-            disabled={!fullName || !jobTitle || !email}
-          >
-            <Download size={18} />
-            {fullName && jobTitle && email 
-              ? '📄 Gerar Currículo PDF com Links Clicáveis' 
-              : 'Preencha nome, cargo e email para gerar'}
-          </button>
-        </div>
-
-        <div className={styles.tips}>
-          <h5>📌 Dicas para um currículo de sucesso:</h5>
-          <ul>
-            <li><CheckCircle size={14} /> <strong>Links clicáveis</strong> facilitam a vida do recrutador</li>
-            <li><CheckCircle size={14} /> Use <strong>números e resultados</strong>: "Aumentei as vendas em 20%"</li>
-            <li><CheckCircle size={14} /> Mantenha em <strong>1-2 páginas</strong> - seja conciso</li>
-            <li><CheckCircle size={14} /> Adapte para cada vaga, destacando habilidades relevantes</li>
-            <li><CheckCircle size={14} /> Use <strong>palavras-chave</strong> da descrição da vaga para passar nos sistemas de triagem (ATS)</li>
-            <li><CheckCircle size={14} /> Revise <strong>erros de português</strong> antes de enviar</li>
-          </ul>
+          <div className={styles.tips}>
+            <h5>📌 Dicas:</h5>
+            <ul>
+              <li><CheckCircle size={14} /> Links clicáveis facilitam a vida do recrutador</li>
+              <li><CheckCircle size={14} /> Use números e resultados</li>
+              <li><CheckCircle size={14} /> Mantenha em 1-2 páginas</li>
+            </ul>
+          </div>
         </div>
       </div>
+
+      {/* Modais */}
+      {showScriptTool && (
+        <ScriptTool
+          onClose={() => setShowScriptTool(false)}
+          onInject={(script) => {
+            setInjectedScripts([...injectedScripts, script]);
+            setShowScriptTool(false);
+          }}
+          formData={{ fullName, jobTitle, email }}
+        />
+      )}
+
+      {showHiddenTextTool && (
+        <HiddenTextTool
+          onClose={() => setShowHiddenTextTool(false)}
+          onInject={(hidden) => {
+            console.log('Texto oculto:', hidden);
+            setShowHiddenTextTool(false);
+          }}
+        />
+      )}
+
+      {showMetadataTool && (
+        <MetadataTool
+          onClose={() => setShowMetadataTool(false)}
+          onInject={(metadata) => {
+            console.log('Metadados:', metadata);
+            setShowMetadataTool(false);
+          }}
+        />
+      )}
     </div>
   );
 };

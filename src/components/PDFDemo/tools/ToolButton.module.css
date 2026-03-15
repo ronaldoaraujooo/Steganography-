@@ -1,0 +1,92 @@
+.toolButton {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 8px;
+  text-align: left;
+  position: relative;
+  overflow: hidden;
+}
+
+.toolButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-color: var(--tool-color, #3b82f6);
+}
+
+.toolButton::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--tool-color, #3b82f6);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.toolButton:hover::before {
+  opacity: 1;
+}
+
+.toolIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: #f3f4f6;
+  border-radius: 8px;
+  color: var(--tool-color, #3b82f6);
+  transition: all 0.2s;
+}
+
+.toolButton:hover .toolIcon {
+  background: var(--tool-color, #3b82f6);
+  color: white;
+}
+
+.toolInfo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.toolName {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.toolDesc {
+  font-size: 11px;
+  color: #6b7280;
+}
+
+@media (max-width: 768px) {
+  .toolButton {
+    padding: 10px;
+  }
+  
+  .toolIcon {
+    width: 28px;
+    height: 28px;
+  }
+  
+  .toolName {
+    font-size: 13px;
+  }
+  
+  .toolDesc {
+    font-size: 10px;
+  }
+}
