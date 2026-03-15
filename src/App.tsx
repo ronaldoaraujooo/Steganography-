@@ -3,6 +3,7 @@ import './App.css';
 import Swal from 'sweetalert2';
 import { ToolsMenu } from './components/ToolsMenu';
 import { CaesarCipher } from './components/CaesarCipher';
+import { VigenereCipher } from './components/VigenereCipher';
 import { 
   Shield, 
   Lock, 
@@ -12,13 +13,17 @@ import {
   HardDrive,
   MessageSquare,
   Settings,
-  Key,
   BarChart3,
   Cpu,
   Menu as MenuIcon,
-  X
+  X,
+  ShieldCheck,
+  Key,
+  Code,
+  RotateCcw
 } from 'lucide-react';
 import { Steganography } from './utils/steganography';
+import { MetadataCleaner } from './utils/metadataCleaner';
 
 function App() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -27,28 +32,20 @@ function App() {
   const [activeTab, setActiveTab] = useState<'encode' | 'decode'>('encode');
   const [loading, setLoading] = useState(false);
   const [capacity, setCapacity] = useState<number>(0);
-  const [selectedTool, setSelectedTool] = useState<string | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(true);
+  const [selectedTool, setSelectedTool] = useState<string | null>(null);
 
   const tools = [
     { id: 'caesar', name: 'Caesar Cipher', icon: <Lock size={18} /> },
-    { id: 'base64', name: 'Base64', icon: <Lock size={18} /> },
-    { id: 'reverse', name: 'Reverse Text', icon: <Lock size={18} /> },
+    { id: 'vigenere', name: 'Vigenère Cipher', icon: <Key size={18} /> },
+    { id: 'xor', name: 'XOR Cipher', icon: <Code size={18} /> },
+    { id: 'base64', name: 'Base64', icon: <Code size={18} /> },
+    { id: 'reverse', name: 'Reverse Text', icon: <RotateCcw size={18} /> },
   ];
 
-  // 🔥 AGORA ESTÁ SENDO USADA!
   const handleApplyEncrypted = (text: string) => {
     setSecretText(text);
-    // Opcional: feedback visual
-    Swal.fire({
-      title: 'Texto aplicado!',
-      text: 'O texto foi copiado para o campo de mensagem secreta.',
-      icon: 'success',
-      timer: 1500,
-      showConfirmButton: false,
-      background: '#1a1e24',
-      color: '#fff',
-    });
+    setSelectedTool(null); // Volta pra esteganografia depois de aplicar
   };
 
   const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -74,23 +71,25 @@ function App() {
 
   const handleEncode = async () => {
     if (!selectedFile || !secretText) return;
+    
     setLoading(true);
     
     try {
-      const encodedImageUrl = await Steganography.encode(selectedFile, secretText);
-      
+      const fileToProcess = await MetadataCleaner.stripMetadata(selectedFile);
+      const { imageUrl, metadata } = await Steganography.encode(fileToProcess, secretText);
+
       const link = document.createElement('a');
-      link.href = encodedImageUrl;
-      link.download = 'encoded_image.png';
+      link.href = imageUrl;
+      link.download = MetadataCleaner.randomizeFilename(selectedFile.name);
       link.click();
 
       Swal.fire({
-        title: 'Encode Complete!',
+        title: '✅ Imagem Gerada!',
         html: `
           <div style="text-align: left; background: #2d3748; padding: 16px; border-radius: 12px; margin: 16px 0; color: white;">
-            <p style="margin: 8px 0;"><strong style="color: #3b82f6;">File:</strong> ${selectedFile.name}</p>
-            <p style="margin: 8px 0;"><strong style="color: #3b82f6;">Message:</strong> ${secretText.length} caracteres</p>
-            <p style="margin: 8px 0;"><strong style="color: #3b82f6;">Status:</strong> Mensagem escondida com sucesso!</p>
+            <p><strong style="color: #3b82f6;">📁 Arquivo:</strong> ${metadata.cleanName}</p>
+            <p><strong style="color: #3b82f6;">📝 Mensagem:</strong> ${secretText.length} caracteres</p>
+            <p><strong style="color: #3b82f6;">🔒 Metadados:</strong> Limpos automaticamente</p>
           </div>
         `,
         icon: 'success',
@@ -101,7 +100,7 @@ function App() {
       });
     } catch (error) {
       Swal.fire({
-        title: 'Erro',
+        title: '❌ Erro',
         text: error instanceof Error ? error.message : 'Erro ao esconder mensagem',
         icon: 'error',
         background: '#1a1e24',
@@ -119,25 +118,27 @@ function App() {
     setLoading(true);
     
     try {
-      const decodedMessage = await Steganography.decode(selectedFile);
-      
+      const decodedMessage = await Steganography.decodeRaw(selectedFile);
+      setSecretText(decodedMessage);
+
       Swal.fire({
-        title: 'Message Revealed!',
+        title: '🔓 Mensagem Extraída!',
         html: `
           <div style="background: linear-gradient(135deg, #3b82f6, #8b5cf6); padding: 24px; border-radius: 16px; margin: 16px 0;">
             <p style="font-size: 18px; color: white; font-weight: 500; word-break: break-word;">"${decodedMessage}"</p>
           </div>
-          <p style="color: #9ca3af; font-size: 14px;">LSB Decode v2.1 • Mensagem recuperada com sucesso!</p>
+          <p style="color: #9ca3af; font-size: 14px;">Mensagem bruta extraída</p>
+          <p style="color: #f59e0b; font-size: 12px;">💡 Use o menu lateral para criptografar/descriptografar</p>
         `,
         icon: 'success',
         background: '#1a1e24',
         color: '#fff',
         confirmButtonColor: '#8b5cf6',
-        confirmButtonText: 'Legal!',
+        confirmButtonText: 'OK',
       });
     } catch (error) {
       Swal.fire({
-        title: 'Erro',
+        title: '❌ Erro',
         text: error instanceof Error ? error.message : 'Nenhuma mensagem encontrada',
         icon: 'error',
         background: '#1a1e24',
@@ -161,126 +162,55 @@ function App() {
     return (bytes / 1024).toFixed(1) + ' KB';
   };
 
-  const renderContent = () => {
-    if (selectedTool === 'caesar') {
-      return (
-        <div className="tool-content full-height">
+  // Renderizar ferramenta selecionada
+  const renderToolContent = () => {
+    if (!selectedTool) return null;
+
+    switch(selectedTool) {
+      case 'caesar':
+        return (
           <CaesarCipher
             initialText={secretText}
-            onEncrypt={(encrypted) => {
-              handleApplyEncrypted(encrypted); // 🔥 USANDO A FUNÇÃO!
-              setSelectedTool(null);
-            }}
-            onDecrypt={(decrypted) => {
-              handleApplyEncrypted(decrypted); // 🔥 USANDO A FUNÇÃO!
-              setSelectedTool(null);
-            }}
+            onEncrypt={handleApplyEncrypted}
+            onDecrypt={handleApplyEncrypted}
           />
-        </div>
-      );
+        );
+      case 'vigenere':
+        return (
+          <VigenereCipher
+            initialText={secretText}
+            onEncrypt={(encrypted, key) => {
+              handleApplyEncrypted(encrypted);
+              Swal.fire({
+                title: '🔑 Chave gerada!',
+                text: `Chave: ${key}\nGuarde esta chave para descriptografar!`,
+                icon: 'info',
+                background: '#1a1e24',
+                color: '#fff',
+                confirmButtonColor: '#8b5cf6',
+              });
+            }}
+            onDecrypt={handleApplyEncrypted}
+          />
+        );
+      default:
+        return (
+          <div className="tool-placeholder">
+            <p>Ferramenta em desenvolvimento...</p>
+          </div>
+        );
     }
-    
-    // Conteúdo padrão (Steganografia)
-    return (
-      <div className="stego-content">
-        {/* Left Panel - Input */}
-        <div className="card">
-          <div className="card-header">
-            <Terminal size={18} />
-            <h2>Input Configuration</h2>
-          </div>
-          <div className="card-content">
-            {!previewUrl ? (
-              <div 
-                className="upload-area"
-                onClick={() => document.getElementById('file-input')?.click()}
-              >
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageSelect}
-                  id="file-input"
-                  hidden
-                />
-                <ImageIcon />
-                <p>Select image file</p>
-                <span className="upload-hint">PNG, JPG • Max 10MB</span>
-              </div>
-            ) : (
-              <div className="preview-container">
-                <div className="preview-header">
-                  <span>📁 {selectedFile?.name}</span>
-                  <button onClick={clearImage}>✕</button>
-                </div>
-                <div className="preview-image">
-                  <img src={previewUrl} alt="Preview" />
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Right Panel - Output */}
-        <div className="card">
-          <div className="card-header">
-            <Settings size={18} />
-            <h2>Output Console</h2>
-          </div>
-          <div className="card-content">
-            <button 
-              className={`action-button ${activeTab}`}
-              onClick={activeTab === 'encode' ? handleEncode : handleDecode}
-              disabled={
-                !selectedFile || 
-                (activeTab === 'encode' && (!secretText || secretText.length > capacity)) || 
-                loading
-              }
-            >
-              {loading ? (
-                <span>Processing...</span>
-              ) : (
-                <>
-                  {activeTab === 'encode' ? <Lock size={16} /> : <Unlock size={16} />}
-                  {activeTab === 'encode' ? 'Encode Message' : 'Decode Message'}
-                </>
-              )}
-            </button>
-
-            {activeTab === 'encode' && previewUrl && (
-              <div className="input-container">
-                <div className="input-header">
-                  <label>
-                    <MessageSquare size={14} />
-                    Secret Message
-                  </label>
-                  <span className={`char-count ${secretText.length > capacity ? 'text-red-500' : ''}`}>
-                    {secretText.length} / {capacity}
-                  </span>
-                </div>
-                <textarea
-                  placeholder="Enter message to hide..."
-                  value={secretText}
-                  onChange={(e) => setSecretText(e.target.value.slice(0, capacity))}
-                  disabled={loading}
-                />
-                {secretText.length > capacity && (
-                  <p style={{ color: '#ef4444', fontSize: '12px', padding: '8px 16px' }}>
-                    ⚠️ Mensagem excede a capacidade da imagem
-                  </p>
-                )}
-              </div>
-            )}
-
-            {loading && <div className="loading-spinner" />}
-          </div>
-        </div>
-      </div>
-    );
   };
 
   return (
-    <div className="container">
-      {/* HEADER (NavBar Superior) */}
+    <div className={`container ${!isMenuOpen ? 'menu-collapsed' : ''}`}>
+      {/* Tools Menu (flutuante) - fora do grid */}
+      <ToolsMenu 
+        onApplyEncrypted={handleApplyEncrypted}
+        currentText={secretText}
+      />
+
+      {/* HEADER */}
       <div className="header">
         <div className="logo-section">
           <button 
@@ -302,72 +232,41 @@ function App() {
             className={`tab-button encode ${activeTab === 'encode' ? 'active' : ''}`}
             onClick={() => {
               setActiveTab('encode');
-              setSecretText('');
               setSelectedTool(null);
             }}
           >
             <Lock size={14} />
-            Encode
+            Esconder
           </button>
           <button 
             className={`tab-button decode ${activeTab === 'decode' ? 'active' : ''}`}
             onClick={() => {
               setActiveTab('decode');
-              setSecretText('');
               setSelectedTool(null);
             }}
           >
             <Unlock size={14} />
-            Decode
+            Extrair
           </button>
         </div>
       </div>
 
-      {/* NAVBAR INFERIOR (Stats) */}
-      <div className="NavbarInferior">
-        <div className="stat-item">
-          <HardDrive size={20} />
-          <div className="stat-info">
-            <span className="stat-label">Image Size</span>
-            <span className="stat-value">{selectedFile ? formatFileSize(selectedFile.size) : '0 KB'}</span>
-          </div>
-        </div>
-        <div className="stat-item">
-          <Cpu size={20} />
-          <div className="stat-info">
-            <span className="stat-label">Capacity</span>
-            <span className="stat-value">{capacity > 0 ? `${capacity} chars` : '0 chars'}</span>
-          </div>
-        </div>
-        <div className="stat-item">
-          <Key size={20} />
-          <div className="stat-info">
-            <span className="stat-label">Mode</span>
-            <span className="stat-value">{activeTab === 'encode' ? 'LSB-256' : 'LSB-DEC'}</span>
-          </div>
-        </div>
-        <div className="stat-item">
-          <MessageSquare size={20} />
-          <div className="stat-info">
-            <span className="stat-label">Message</span>
-            <span className="stat-value">{secretText.length} chars</span>
-          </div>
-        </div>
-        <div className="stat-item">
-          <BarChart3 size={20} />
-          <div className="stat-info">
-            <span className="stat-label">Progress</span>
-            <span className="stat-value">{selectedFile ? (secretText.length > 0 ? 'Ready' : 'Idle') : 'Waiting'}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* MENU LATERAL */}
-      <div className={`menu ${!isMenuOpen ? 'collapsed' : ''}`}>
+      {/* MENU LATERAL (agora com ferramentas!) */}
+      <div className="menu">
         <div className="menu-header">
           <h3>Ferramentas</h3>
         </div>
         <div className="menu-items">
+          {/* Botão da ferramenta principal */}
+          <button
+            className={`menu-item ${!selectedTool ? 'active' : ''}`}
+            onClick={() => setSelectedTool(null)}
+          >
+            <span className="menu-icon"><ImageIcon size={18} /></span>
+            <span className="menu-name">Esteganografia</span>
+          </button>
+
+          {/* Ferramentas de criptografia */}
           {tools.map(tool => (
             <button
               key={tool.id}
@@ -378,26 +277,158 @@ function App() {
               <span className="menu-name">{tool.name}</span>
             </button>
           ))}
-          <button
-            className={`menu-item ${!selectedTool ? 'active' : ''}`}
-            onClick={() => setSelectedTool(null)}
-          >
-            <span className="menu-icon"><ImageIcon size={18} /></span>
-            <span className="menu-name">Steganography</span>
-          </button>
         </div>
       </div>
 
-      {/* CONTENT (Área dinâmica) */}
-      <div className="content">
-        {renderContent()}
+      {/* NAVBAR INFERIOR */}
+      <div className="NavbarInferior">
+        <div className="stat-item">
+          <HardDrive size={20} />
+          <div className="stat-info">
+            <span className="stat-label">Imagem</span>
+            <span className="stat-value">{selectedFile ? formatFileSize(selectedFile.size) : '0 KB'}</span>
+          </div>
+        </div>
+        <div className="stat-item">
+          <Cpu size={20} />
+          <div className="stat-info">
+            <span className="stat-label">Capacidade</span>
+            <span className="stat-value">{capacity > 0 ? `${capacity} chars` : '0 chars'}</span>
+          </div>
+        </div>
+        <div className="stat-item">
+          <MessageSquare size={20} />
+          <div className="stat-info">
+            <span className="stat-label">Mensagem</span>
+            <span className="stat-value">{secretText.length} chars</span>
+          </div>
+        </div>
+        <div className="stat-item">
+          <ShieldCheck size={20} />
+          <div className="stat-info">
+            <span className="stat-label">Metadados</span>
+            <span className="stat-value">Limpos ✓</span>
+          </div>
+        </div>
+        <div className="stat-item">
+          <BarChart3 size={20} />
+          <div className="stat-info">
+            <span className="stat-label">Status</span>
+            <span className="stat-value">{selectedFile ? 'Pronto' : 'Aguardando'}</span>
+          </div>
+        </div>
       </div>
 
-      {/* ToolsMenu (botão flutuante) - TAMBÉM USA A FUNÇÃO! */}
-      <ToolsMenu 
-        onApplyEncrypted={handleApplyEncrypted}
-        currentText={secretText}
-      />
+      {/* CONTENT */}
+      <div className="content">
+        {selectedTool ? (
+          // Mostra ferramenta selecionada
+          <div className="tool-content full-height">
+            {renderToolContent()}
+          </div>
+        ) : (
+          // Mostra esteganografia normal
+          <div className="stego-content">
+            {/* Left Panel - Input */}
+            <div className="card">
+              <div className="card-header">
+                <Terminal size={18} />
+                <h2>Carregar Imagem</h2>
+              </div>
+              <div className="card-content">
+                {!previewUrl ? (
+                  <div 
+                    className="upload-area"
+                    onClick={() => document.getElementById('file-input')?.click()}
+                  >
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageSelect}
+                      id="file-input"
+                      hidden
+                    />
+                    <ImageIcon size={40} />
+                    <p>Selecione uma imagem</p>
+                    <span className="upload-hint">PNG • Máx 10MB</span>
+                  </div>
+                ) : (
+                  <div className="preview-container">
+                    <div className="preview-header">
+                      <span>📁 {selectedFile?.name}</span>
+                      <button onClick={clearImage}>✕</button>
+                    </div>
+                    <div className="preview-image">
+                      <img src={previewUrl} alt="Preview" />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Right Panel - Output */}
+            <div className="card">
+              <div className="card-header">
+                <Settings size={18} />
+                <h2>{activeTab === 'encode' ? 'Esconder Mensagem' : 'Extrair Mensagem'}</h2>
+              </div>
+              <div className="card-content">
+                {activeTab === 'encode' && previewUrl && (
+                  <div className="input-container">
+                    <div className="input-header">
+                      <label>
+                        <MessageSquare size={14} />
+                        Mensagem
+                      </label>
+                      <span className={`char-count ${secretText.length > capacity ? 'text-red-500' : ''}`}>
+                        {secretText.length} / {capacity}
+                      </span>
+                    </div>
+                    <textarea
+                      placeholder="Digite a mensagem para esconder..."
+                      value={secretText}
+                      onChange={(e) => setSecretText(e.target.value.slice(0, capacity))}
+                      disabled={loading}
+                      rows={4}
+                    />
+                    {secretText.length > capacity && (
+                      <p className="warning-text">⚠️ Mensagem muito grande</p>
+                    )}
+                  </div>
+                )}
+
+                {activeTab === 'encode' && previewUrl && (
+                  <div className="info-message">
+                    <ShieldCheck size={14} />
+                    <span>Metadados serão limpos automaticamente</span>
+                  </div>
+                )}
+
+                <button 
+                  className={`action-button ${activeTab}`}
+                  onClick={activeTab === 'encode' ? handleEncode : handleDecode}
+                  disabled={
+                    !selectedFile || 
+                    (activeTab === 'encode' && (!secretText || secretText.length > capacity)) || 
+                    loading
+                  }
+                >
+                  {loading ? (
+                    <span>Processando...</span>
+                  ) : (
+                    <>
+                      {activeTab === 'encode' ? <Lock size={16} /> : <Unlock size={16} />}
+                      {activeTab === 'encode' ? 'Esconder na Imagem' : 'Extrair da Imagem'}
+                    </>
+                  )}
+                </button>
+
+                {loading && <div className="loading-spinner" />}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

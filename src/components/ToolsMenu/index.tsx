@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Wrench, X, Lock, ChevronRight, ChevronLeft, Code, RotateCcw } from 'lucide-react';
+import { Wrench, X, Lock, ChevronRight, ChevronLeft, Code, RotateCcw, Key } from 'lucide-react';
 import { CaesarCipher } from '../CaesarCipher';
+import { VigenereCipher } from '../VigenereCipher';
 import styles from './ToolsMenu.module.css';
 
 interface ToolsMenuProps {
@@ -16,13 +17,19 @@ export const ToolsMenu: React.FC<ToolsMenuProps> = ({ onApplyEncrypted, currentT
     {
       id: 'caesar',
       name: 'Caesar Cipher',
-      description: 'Criptografia com chave = tamanho do texto',
+      description: 'Cifra simples com deslocamento',
       icon: <Lock size={18} />,
+    },
+    {
+      id: 'vigenere',
+      name: 'Vigenère Cipher',
+      description: 'Cifra polialfabética com chave',
+      icon: <Key size={18} />,
     },
     {
       id: 'base64',
       name: 'Base64',
-      description: 'Codificação/decodificação Base64',
+      description: 'Codificação/decodificação',
       icon: <Code size={18} />,
     },
     {
@@ -51,22 +58,30 @@ export const ToolsMenu: React.FC<ToolsMenuProps> = ({ onApplyEncrypted, currentT
             }}
           />
         );
-      case 'base64':
+      case 'vigenere':
         return (
-          <div className={styles.comingSoon}>
-            <Code size={48} />
-            <p>Ferramenta Base64 em desenvolvimento...</p>
-          </div>
-        );
-      case 'reverse':
-        return (
-          <div className={styles.comingSoon}>
-            <RotateCcw size={48} />
-            <p>Ferramenta Reverse Text em desenvolvimento...</p>
-          </div>
+          <VigenereCipher
+            initialText={currentText}
+            onEncrypt={(encrypted, key) => {
+              onApplyEncrypted(encrypted);
+              // 🔥 AGORA USA A KEY! Mostra pra usuário
+              alert(`🔑 Chave usada: ${key}\nGuarde esta chave para descriptografar!`);
+              setSelectedTool(null);
+              setIsOpen(false);
+            }}
+            onDecrypt={(decrypted) => {
+              onApplyEncrypted(decrypted);
+              setSelectedTool(null);
+              setIsOpen(false);
+            }}
+          />
         );
       default:
-        return null;
+        return (
+          <div className={styles.comingSoon}>
+            <p>Ferramenta em desenvolvimento...</p>
+          </div>
+        );
     }
   };
 
