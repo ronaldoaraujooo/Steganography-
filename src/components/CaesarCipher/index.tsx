@@ -117,7 +117,7 @@ export const CaesarCipher: React.FC<CaesarCipherProps> = ({
       {/* Info Panel (opcional, pode ser colapsado) */}
       {showInfo && (
         <div className={styles.info}>
-          <p><strong>🔐 Como usar:</strong> Criptografar: digite → chave gerada. Descriptografar: texto + chave.</p>
+          <p><strong>Como usar:</strong> Criptografar: digite → chave gerada. Descriptografar: texto + chave.</p>
         </div>
       )}
 
@@ -144,7 +144,7 @@ export const CaesarCipher: React.FC<CaesarCipherProps> = ({
         {/* Coluna Esquerda - Input */}
         <div className={styles.inputColumn}>
           <label>
-            {mode === 'encrypt' ? '📝 Texto original:' : '🔐 Texto cifrado:'}
+            {mode === 'encrypt' ? 'Texto original:' : '🔐 Texto cifrado:'}
           </label>
           <textarea
             className={styles.textarea}
@@ -160,7 +160,7 @@ export const CaesarCipher: React.FC<CaesarCipherProps> = ({
         <div className={styles.outputColumn}>
           <div className={styles.outputHeader}>
             <label>
-              {mode === 'encrypt' ? '📤 Texto cifrado:' : '📥 Texto descriptografado:'}
+              {mode === 'encrypt' ? 'Texto cifrado:' : 'Texto descriptografado:'}
             </label>
             <div className={styles.outputActions}>
               <button 

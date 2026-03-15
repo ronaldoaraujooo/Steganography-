@@ -6,6 +6,10 @@ import { CaesarCipher } from './components/CaesarCipher';
 import { VigenereCipher } from './components/VigenereCipher';
 import { ImageConverter } from './components/ImageConverter';
 import { PlatformSelector } from './components/PlatformSelector';
+import { XorCipher } from './components/XorCipher';
+import { Base64Tool } from './components/Base64Tool';
+import { ReverseText } from './components/ReverseText';
+import { PDFDemo } from './components/PDFDemo';
 import { 
   Shield, 
   Lock, 
@@ -22,6 +26,7 @@ import {
   ShieldCheck,
   Key,
   Code,
+  FileText,
   RotateCcw
 } from 'lucide-react';
 import { Steganography } from './utils/steganography';
@@ -48,6 +53,7 @@ function App() {
     { id: 'xor', name: 'XOR Cipher', icon: <Code size={18} /> },
     { id: 'base64', name: 'Base64', icon: <Code size={18} /> },
     { id: 'reverse', name: 'Reverse Text', icon: <RotateCcw size={18} /> },
+    { id: 'pdf-demo', name: 'PDF Steganography', icon: <FileText size={18} /> },
   ];
 
   // ========== HANDLERS ==========
@@ -166,7 +172,7 @@ function App() {
   setLoading(true);
   
   try {
-    console.log('📱 Iniciando decode no mobile...');
+    console.log('Iniciando decode no mobile...');
     console.log('📁 Arquivo:', selectedFile.name, 'Tamanho:', selectedFile.size);
     
     // Timeout para não travar
@@ -182,7 +188,7 @@ function App() {
     setSecretText(decodedMessage);
 
     Swal.fire({
-      title: '🔓 Mensagem Extraída!',
+      title: 'Mensagem Extraída!',
       html: `
         <div style="background: linear-gradient(135deg, #3b82f6, #8b5cf6); padding: 16px; border-radius: 12px; margin: 16px 0;">
           <p style="font-size: 16px; color: white; word-break: break-word;">"${decodedMessage}"</p>
@@ -204,7 +210,7 @@ function App() {
     
     // Mostra erro amigável
     Swal.fire({
-      title: '❌ Erro no mobile',
+      title: 'Erro no mobile',
       html: `
         <p>${errorMessage}</p>
         <p style="color: #f59e0b; margin-top: 16px;">Tente:</p>
@@ -241,6 +247,31 @@ function App() {
     if (!selectedTool) return null;
 
     switch(selectedTool) {
+      case 'pdf-demo':
+        return <PDFDemo />;
+      case 'reverse':
+      return (
+        <ReverseText
+          initialText={secretText}
+          onReverse={handleApplyEncrypted}
+        />
+      );
+      case 'base64':
+        return (
+          <Base64Tool
+            initialText={secretText}
+            onEncoded={handleApplyEncrypted}
+            onDecoded={handleApplyEncrypted}
+          />
+        );
+      case 'xor':
+      return (
+        <XorCipher
+          initialText={secretText}
+          onEncrypt={handleApplyEncrypted}
+          onDecrypt={handleApplyEncrypted}
+        />
+      );
       case 'converter':
         return (
           <ImageConverter

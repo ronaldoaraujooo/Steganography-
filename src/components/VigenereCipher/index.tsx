@@ -73,7 +73,7 @@ export const VigenereCipher: React.FC<VigenereCipherProps> = ({
 
       {showInfo && (
         <div className={styles.info}>
-          <p><strong>🔐 Cifra de Vigenère</strong> - Muito mais forte que César!</p>
+          <p><strong>Cifra de Vigenère</strong> - Muito mais forte que César!</p>
           <p>Use uma <strong>chave (palavra ou frase)</strong> para criptografar</p>
           <p>Exemplo: "segredo" + chave "casa" → resultado complexo</p>
           <p>⚠️ A MESMA CHAVE é necessária para descriptografar!</p>
@@ -82,7 +82,7 @@ export const VigenereCipher: React.FC<VigenereCipherProps> = ({
 
       <div className={styles.keySection}>
         <div className={styles.keyHeader}>
-          <label>🔑 Chave de criptografia:</label>
+          <label>Chave de criptografia:</label>
           <button 
             className={styles.iconButton}
             onClick={generateStrongKey}
@@ -113,7 +113,7 @@ export const VigenereCipher: React.FC<VigenereCipherProps> = ({
 
       <div className={styles.editorArea}>
         <div className={styles.inputColumn}>
-          <label>📝 Texto original:</label>
+          <label>Texto original:</label>
           <textarea
             className={styles.textarea}
             value={inputText}
@@ -135,7 +135,7 @@ export const VigenereCipher: React.FC<VigenereCipherProps> = ({
 
         <div className={styles.outputColumn}>
           <div className={styles.outputHeader}>
-            <label>📤 Resultado:</label>
+            <label>Resultado:</label>
             <div className={styles.outputActions}>
               <button 
                 className={styles.iconButton}
