@@ -5,6 +5,7 @@ import { ToolsMenu } from './components/ToolsMenu';
 import { CaesarCipher } from './components/CaesarCipher';
 import { VigenereCipher } from './components/VigenereCipher';
 import { ImageConverter } from './components/ImageConverter';
+import { PlatformSelector } from './components/PlatformSelector';
 import { 
   Shield, 
   Lock, 
@@ -27,6 +28,7 @@ import { Steganography } from './utils/steganography';
 import { MetadataCleaner } from './utils/metadataCleaner';
 
 function App() {
+  // ========== STATES ==========
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [secretText, setSecretText] = useState('');
@@ -35,55 +37,81 @@ function App() {
   const [capacity, setCapacity] = useState<number>(0);
   const [isMenuOpen, setIsMenuOpen] = useState(true);
   const [selectedTool, setSelectedTool] = useState<string | null>(null);
+  const [selectedPlatform, setSelectedPlatform] = useState<string>('email');
+  const [isLoadingPreview, setIsLoadingPreview] = useState(false);
 
-const tools = [
-  { id: 'converter', name: 'Conversor de Imagens', icon: <ImageIcon size={18} /> },
-  { id: 'caesar', name: 'Caesar Cipher', icon: <Lock size={18} /> },
-  { id: 'vigenere', name: 'Vigenère Cipher', icon: <Key size={18} /> },
-  { id: 'xor', name: 'XOR Cipher', icon: <Code size={18} /> },
-  { id: 'base64', name: 'Base64', icon: <Code size={18} /> },
-  { id: 'reverse', name: 'Reverse Text', icon: <RotateCcw size={18} /> },
-];
+  // ========== FERRAMENTAS ==========
+  const tools = [
+    { id: 'converter', name: 'Conversor de Imagens', icon: <ImageIcon size={18} /> },
+    { id: 'caesar', name: 'Caesar Cipher', icon: <Lock size={18} /> },
+    { id: 'vigenere', name: 'Vigenère Cipher', icon: <Key size={18} /> },
+    { id: 'xor', name: 'XOR Cipher', icon: <Code size={18} /> },
+    { id: 'base64', name: 'Base64', icon: <Code size={18} /> },
+    { id: 'reverse', name: 'Reverse Text', icon: <RotateCcw size={18} /> },
+  ];
 
+  // ========== HANDLERS ==========
   const handleApplyEncrypted = (text: string) => {
     setSecretText(text);
-    setSelectedTool(null); // Volta pra esteganografia depois de aplicar
+    setSelectedTool(null);
   };
 
   const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     
-     if (!file.type.includes('png')) {
-    Swal.fire({
-      title: '⚠️ Formato inválido',
-      html: `
-        <p>A imagem deve ser <strong>PNG</strong>.</p>
-        <p>JPG não funciona porque destrói a mensagem escondida.</p>
-        <p>Use nossa ferramenta de conversor, menu de ferramentas.</p>
-      `,
-      icon: 'warning',
-      background: '#1a1e24',
-      color: '#fff',
-      confirmButtonColor: '#3b82f6',
-    });
-    return;
-  }
+    // Reset states
+    setSelectedFile(null);
+    setPreviewUrl(null);
+    setSecretText('');
+    setCapacity(0);
+    setIsLoadingPreview(true);
+    
+    // Validação de formato
+    if (!file.type.includes('png')) {
+      setIsLoadingPreview(false);
+      Swal.fire({
+        title: '⚠️ Formato inválido',
+        html: `
+          <p>A imagem deve ser <strong>PNG</strong>.</p>
+          <p>JPG não funciona porque destrói a mensagem escondida.</p>
+          <p>Use nossa ferramenta de conversor no menu lateral.</p>
+        `,
+        icon: 'warning',
+        background: '#1a1e24',
+        color: '#fff',
+        confirmButtonColor: '#3b82f6',
+      });
+      return;
+    }
 
     setSelectedFile(file);
-    setSecretText('');
     
+    // Preview da imagem
     const reader = new FileReader();
     reader.onload = (e) => {
       setPreviewUrl(e.target?.result as string);
+      setIsLoadingPreview(false);
+    };
+    reader.onerror = () => {
+      setIsLoadingPreview(false);
+      Swal.fire({
+        title: 'Erro',
+        text: 'Não foi possível carregar a imagem',
+        icon: 'error',
+        background: '#1a1e24',
+        color: '#fff',
+      });
     };
     reader.readAsDataURL(file);
-     setSelectedFile(file);
+    
+    // Calcular capacidade
     try {
       const cap = await Steganography.calculateCapacity(file);
       setCapacity(cap);
     } catch (error) {
       console.error('Erro ao calcular capacidade:', error);
+      setCapacity(1000); // Fallback
     }
   };
 
@@ -105,10 +133,12 @@ const tools = [
         title: '✅ Imagem Gerada!',
         html: `
           <div style="text-align: left; background: #2d3748; padding: 16px; border-radius: 12px; margin: 16px 0; color: white;">
-            <p><strong style="color: #3b82f6;">📁 Arquivo:</strong> ${metadata.cleanName}</p>
-            <p><strong style="color: #3b82f6;">📝 Mensagem:</strong> ${secretText.length} caracteres</p>
-            <p><strong style="color: #3b82f6;">🔒 Metadados:</strong> Limpos automaticamente</p>
+            <p><strong style="color: #3b82f6;">Arquivo:</strong> ${metadata.cleanName}</p>
+            <p><strong style="color: #3b82f6;">Mensagem:</strong> ${secretText.length} caracteres</p>
+            <p><strong style="color: #3b82f6;">Metadados:</strong> Limpos automaticamente</p>
+            <p><strong style="color: #3b82f6;">Destino:</strong> ${selectedPlatform}</p>
           </div>
+          <p style="color: #f59e0b; font-size: 12px;">⚠️ IMPORTANTE: Envie como ARQUIVO, não como imagem!</p>
         `,
         icon: 'success',
         background: '#1a1e24',
@@ -118,7 +148,7 @@ const tools = [
       });
     } catch (error) {
       Swal.fire({
-        title: '❌ Erro',
+        title: 'Erro',
         text: error instanceof Error ? error.message : 'Erro ao esconder mensagem',
         icon: 'error',
         background: '#1a1e24',
@@ -140,13 +170,13 @@ const tools = [
       setSecretText(decodedMessage);
 
       Swal.fire({
-        title: '🔓 Mensagem Extraída!',
+        title: 'Mensagem Extraída!',
         html: `
           <div style="background: linear-gradient(135deg, #3b82f6, #8b5cf6); padding: 24px; border-radius: 16px; margin: 16px 0;">
             <p style="font-size: 18px; color: white; font-weight: 500; word-break: break-word;">"${decodedMessage}"</p>
           </div>
           <p style="color: #9ca3af; font-size: 14px;">Mensagem bruta extraída</p>
-          <p style="color: #f59e0b; font-size: 12px;">💡 Use o menu lateral para criptografar/descriptografar</p>
+          <p style="color: #f59e0b; font-size: 12px;">Use o menu lateral para criptografar/descriptografar</p>
         `,
         icon: 'success',
         background: '#1a1e24',
@@ -156,7 +186,7 @@ const tools = [
       });
     } catch (error) {
       Swal.fire({
-        title: '❌ Erro',
+        title: 'Erro',
         text: error instanceof Error ? error.message : 'Nenhuma mensagem encontrada',
         icon: 'error',
         background: '#1a1e24',
@@ -180,65 +210,76 @@ const tools = [
     return (bytes / 1024).toFixed(1) + ' KB';
   };
 
-  // Renderizar ferramenta selecionada
- // Renderizar ferramenta selecionada
-const renderToolContent = () => {
-  if (!selectedTool) return null;
+  // ========== RENDER TOOL ==========
+  const renderToolContent = () => {
+    if (!selectedTool) return null;
 
-  switch(selectedTool) {
-    case 'converter':
-      return (
-        <ImageConverter
-          onConverted={(file, preview) => {
-            // Usar a imagem convertida na esteganografia
-            setSelectedFile(file);
-            setPreviewUrl(preview);
-            // Calcular capacidade da nova imagem
-            Steganography.calculateCapacity(file).then(cap => {
-              setCapacity(cap);
-            });
-            setSelectedTool(null); // Volta pra esteganografia
-          }}
-        />
-      );
-    case 'caesar':
-      return (
-        <CaesarCipher
-          initialText={secretText}
-          onEncrypt={handleApplyEncrypted}
-          onDecrypt={handleApplyEncrypted}
-        />
-      );
-    case 'vigenere':
-      return (
-        <VigenereCipher
-          initialText={secretText}
-          onEncrypt={(encrypted, key) => {
-            handleApplyEncrypted(encrypted);
-            Swal.fire({
-              title: '🔑 Chave gerada!',
-              text: `Chave: ${key}\nGuarde esta chave para descriptografar!`,
-              icon: 'info',
-              background: '#1a1e24',
-              color: '#fff',
-              confirmButtonColor: '#8b5cf6',
-            });
-          }}
-          onDecrypt={handleApplyEncrypted}
-        />
-      );
-    default:
-      return (
-        <div className="tool-placeholder">
-          <p>Ferramenta em desenvolvimento...</p>
-        </div>
-      );
-  }
-};
+    switch(selectedTool) {
+      case 'converter':
+        return (
+          <ImageConverter
+            onConverted={(file, preview) => {
+              setSelectedFile(file);
+              setPreviewUrl(preview);
+              Steganography.calculateCapacity(file).then(cap => {
+                setCapacity(cap);
+              });
+              setSelectedTool(null);
+            }}
+          />
+        );
+      case 'caesar':
+        return (
+          <CaesarCipher
+            initialText={secretText}
+            onEncrypt={handleApplyEncrypted}
+            onDecrypt={handleApplyEncrypted}
+          />
+        );
+      case 'vigenere':
+        return (
+          <VigenereCipher
+            initialText={secretText}
+            onEncrypt={(encrypted, key) => {
+              handleApplyEncrypted(encrypted);
+              Swal.fire({
+                title: 'Chave gerada!',
+                text: `Chave: ${key}\nGuarde esta chave para descriptografar!`,
+                icon: 'info',
+                background: '#1a1e24',
+                color: '#fff',
+                confirmButtonColor: '#8b5cf6',
+              });
+            }}
+            onDecrypt={handleApplyEncrypted}
+          />
+        );
+      default:
+        return (
+          <div className="tool-placeholder">
+            <p>Ferramenta em desenvolvimento...</p>
+          </div>
+        );
+    }
+  };
 
+  // ========== VERIFICAÇÕES ==========
+  const isEncodeDisabled = () => {
+    if (!selectedFile) return true;
+    if (!secretText.trim()) return true;
+    if (secretText.length > capacity) return true;
+    return false;
+  };
+
+  const isDecodeDisabled = () => {
+    if (!selectedFile) return true;
+    return false;
+  };
+
+  // ========== RENDER ==========
   return (
     <div className={`container ${!isMenuOpen ? 'menu-collapsed' : ''}`}>
-      {/* Tools Menu (flutuante) - fora do grid */}
+      {/* Tools Menu flutuante */}
       <ToolsMenu 
         onApplyEncrypted={handleApplyEncrypted}
         currentText={secretText}
@@ -285,13 +326,12 @@ const renderToolContent = () => {
         </div>
       </div>
 
-      {/* MENU LATERAL (agora com ferramentas!) */}
+      {/* MENU LATERAL */}
       <div className="menu">
         <div className="menu-header">
           <h3>Ferramentas</h3>
         </div>
         <div className="menu-items">
-          {/* Botão da ferramenta principal */}
           <button
             className={`menu-item ${!selectedTool ? 'active' : ''}`}
             onClick={() => setSelectedTool(null)}
@@ -300,7 +340,6 @@ const renderToolContent = () => {
             <span className="menu-name">Esteganografia</span>
           </button>
 
-          {/* Ferramentas de criptografia */}
           {tools.map(tool => (
             <button
               key={tool.id}
@@ -356,12 +395,10 @@ const renderToolContent = () => {
       {/* CONTENT */}
       <div className="content">
         {selectedTool ? (
-          // Mostra ferramenta selecionada
           <div className="tool-content full-height">
             {renderToolContent()}
           </div>
         ) : (
-          // Mostra esteganografia normal
           <div className="stego-content">
             {/* Left Panel - Input */}
             <div className="card">
@@ -407,44 +444,70 @@ const renderToolContent = () => {
                 <h2>{activeTab === 'encode' ? 'Esconder Mensagem' : 'Extrair Mensagem'}</h2>
               </div>
               <div className="card-content">
-                {activeTab === 'encode' && previewUrl && (
-                  <div className="input-container">
-                    <div className="input-header">
-                      <label>
-                        <MessageSquare size={14} />
-                        Mensagem
-                      </label>
-                      <span className={`char-count ${secretText.length > capacity ? 'text-red-500' : ''}`}>
-                        {secretText.length} / {capacity}
-                      </span>
-                    </div>
-                    <textarea
-                      placeholder="Digite a mensagem para esconder..."
-                      value={secretText}
-                      onChange={(e) => setSecretText(e.target.value.slice(0, capacity))}
-                      disabled={loading}
-                      rows={4}
+                {/* LOADING PREVIEW */}
+                {activeTab === 'encode' && isLoadingPreview && (
+                  <div className="loading-preview">
+                    <div className="spinner-small"></div>
+                    <p>Carregando preview da imagem...</p>
+                  </div>
+                )}
+
+                {/* ENCODE AREA */}
+                {activeTab === 'encode' && previewUrl && !isLoadingPreview && (
+                  <div className="encode-area">
+                    {/* Platform Selector */}
+                    <PlatformSelector 
+                      selected={selectedPlatform}
+                      onSelect={setSelectedPlatform}
                     />
-                    {secretText.length > capacity && (
-                      <p className="warning-text">⚠️ Mensagem muito grande</p>
-                    )}
+
+                    {/* Info metadados */}
+                    <div className="info-message">
+                      <ShieldCheck size={14} />
+                      <span>Metadados serão limpos automaticamente</span>
+                    </div>
+
+                    {/* Textarea */}
+                    <div className="input-container">
+                      <div className="input-header">
+                        <label>
+                          <MessageSquare size={14} />
+                          Mensagem
+                        </label>
+                        <span className={`char-count ${secretText.length > capacity ? 'text-red-500' : ''}`}>
+                          {secretText.length} / {capacity}
+                        </span>
+                      </div>
+                      <textarea
+                        placeholder="Digite a mensagem para esconder..."
+                        value={secretText}
+                        onChange={(e) => setSecretText(e.target.value.slice(0, capacity))}
+                        disabled={loading}
+                        rows={4}
+                      />
+                      {secretText.length > capacity && (
+                        <p className="warning-text">⚠️ Mensagem muito grande</p>
+                      )}
+                    </div>
                   </div>
                 )}
 
-                {activeTab === 'encode' && previewUrl && (
+                {/* DECODE AREA */}
+                {activeTab === 'decode' && previewUrl && (
                   <div className="info-message">
-                    <ShieldCheck size={14} />
-                    <span>Metadados serão limpos automaticamente</span>
+                    <Unlock size={14} />
+                    <span>Clique em "Extrair" para revelar a mensagem</span>
                   </div>
                 )}
 
+                {/* BOTÃO PRINCIPAL */}
                 <button 
                   className={`action-button ${activeTab}`}
                   onClick={activeTab === 'encode' ? handleEncode : handleDecode}
                   disabled={
-                    !selectedFile || 
-                    (activeTab === 'encode' && (!secretText || secretText.length > capacity)) || 
-                    loading
+                    activeTab === 'encode' 
+                      ? isEncodeDisabled() 
+                      : isDecodeDisabled() || loading
                   }
                 >
                   {loading ? (
@@ -463,14 +526,15 @@ const renderToolContent = () => {
           </div>
         )}
       </div>
-      {/* Overlay para mobile quando menu está aberto - ADICIONE ISSO AQUI! */}
-    {!isMenuOpen && ( // Só mostra quando o menu está ABERTO (isMenuOpen = false)
-      <div 
-        className="menu-overlay" 
-        onClick={() => setIsMenuOpen(true)} // Volta para true (fecha o menu)
-        onTouchEnd={() => setIsMenuOpen(true)}
-      />
-    )}
+
+      {/* Overlay mobile */}
+      {!isMenuOpen && (
+        <div 
+          className="menu-overlay" 
+          onClick={() => setIsMenuOpen(true)}
+          onTouchEnd={() => setIsMenuOpen(true)}
+        />
+      )}
     </div>
   );
 }
