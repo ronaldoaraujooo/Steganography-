@@ -172,3 +172,5 @@ Modo escuro
 5- Abra um Pull Request
 
 
+<div align="center"> <p>Feito com ☕ e ❤️ para ensinar segurança digital</p> <p><strong>⚠️ Aviso:</strong> Use apenas para fins educacionais e legais</p> <p>Versão 3.0.0 - 2026</p> </div> ```
+
