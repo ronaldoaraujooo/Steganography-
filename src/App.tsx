@@ -35,7 +35,7 @@ function App() {
   const [activeTab, setActiveTab] = useState<'encode' | 'decode'>('encode');
   const [loading, setLoading] = useState(false);
   const [capacity, setCapacity] = useState<number>(0);
-  const [isMenuOpen, setIsMenuOpen] = useState(true);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [selectedTool, setSelectedTool] = useState<string | null>(null);
   const [selectedPlatform, setSelectedPlatform] = useState<string>('email');
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
@@ -160,43 +160,69 @@ function App() {
     }
   };
 
-  const handleDecode = async () => {
-    if (!selectedFile) return;
+ const handleDecode = async () => {
+  if (!selectedFile) return;
+  
+  setLoading(true);
+  
+  try {
+    console.log('📱 Iniciando decode no mobile...');
+    console.log('📁 Arquivo:', selectedFile.name, 'Tamanho:', selectedFile.size);
     
-    setLoading(true);
+    // Timeout para não travar
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Tempo limite excedido')), 30000);
+    });
     
-    try {
-      const decodedMessage = await Steganography.decodeRaw(selectedFile);
-      setSecretText(decodedMessage);
+    const decodePromise = Steganography.decodeRaw(selectedFile);
+    
+    const decodedMessage = await Promise.race([decodePromise, timeoutPromise]) as string;
+    
+    console.log('✅ Mensagem extraída:', decodedMessage);
+    setSecretText(decodedMessage);
 
-      Swal.fire({
-        title: 'Mensagem Extraída!',
-        html: `
-          <div style="background: linear-gradient(135deg, #3b82f6, #8b5cf6); padding: 24px; border-radius: 16px; margin: 16px 0;">
-            <p style="font-size: 18px; color: white; font-weight: 500; word-break: break-word;">"${decodedMessage}"</p>
-          </div>
-          <p style="color: #9ca3af; font-size: 14px;">Mensagem bruta extraída</p>
-          <p style="color: #f59e0b; font-size: 12px;">Use o menu lateral para criptografar/descriptografar</p>
-        `,
-        icon: 'success',
-        background: '#1a1e24',
-        color: '#fff',
-        confirmButtonColor: '#8b5cf6',
-        confirmButtonText: 'OK',
-      });
-    } catch (error) {
-      Swal.fire({
-        title: 'Erro',
-        text: error instanceof Error ? error.message : 'Nenhuma mensagem encontrada',
-        icon: 'error',
-        background: '#1a1e24',
-        color: '#fff',
-        confirmButtonColor: '#ef4444',
-      });
-    } finally {
-      setLoading(false);
+    Swal.fire({
+      title: '🔓 Mensagem Extraída!',
+      html: `
+        <div style="background: linear-gradient(135deg, #3b82f6, #8b5cf6); padding: 16px; border-radius: 12px; margin: 16px 0;">
+          <p style="font-size: 16px; color: white; word-break: break-word;">"${decodedMessage}"</p>
+        </div>
+      `,
+      icon: 'success',
+      background: '#1a1e24',
+      color: '#fff',
+      confirmButtonColor: '#8b5cf6',
+      confirmButtonText: 'OK',
+    });
+  } catch (error) {
+    console.error('❌ ERRO NO DECODE:', error);
+    
+    let errorMessage = 'Erro desconhecido';
+    if (error instanceof Error) {
+      errorMessage = error.message;
     }
-  };
+    
+    // Mostra erro amigável
+    Swal.fire({
+      title: '❌ Erro no mobile',
+      html: `
+        <p>${errorMessage}</p>
+        <p style="color: #f59e0b; margin-top: 16px;">Tente:</p>
+        <ul style="text-align: left; color: #9ca3af;">
+          <li>✅ Usar imagem menor (menos de 1MB)</li>
+          <li>✅ Formato PNG</li>
+          <li>✅ Recarregar a página</li>
+        </ul>
+      `,
+      icon: 'error',
+      background: '#1a1e24',
+      color: '#fff',
+      confirmButtonColor: '#ef4444',
+    });
+  } finally {
+    setLoading(false);
+  }
+};
 
   const clearImage = () => {
     setSelectedFile(null);
@@ -298,7 +324,7 @@ function App() {
             <Shield size={24} />
           </div>
           <div className="logo-text">
-            <h1>Steganography CMS</h1>
+            <h4>Steganography</h4>
           </div>
         </div>
 
@@ -327,9 +353,10 @@ function App() {
       </div>
 
       {/* MENU LATERAL */}
-      <div className="menu">
+      <div className={`menu ${!isMenuOpen ? 'open' : ''}`}>
+
         <div className="menu-header">
-          <h3>Ferramentas</h3>
+         
         </div>
         <div className="menu-items">
           <button
@@ -504,6 +531,12 @@ function App() {
                 <button 
                   className={`action-button ${activeTab}`}
                   onClick={activeTab === 'encode' ? handleEncode : handleDecode}
+                  onTouchEnd={(e) => {
+                    e.preventDefault();
+                    if (activeTab === 'decode' && !loading) {
+                      handleDecode();
+                    }
+                  }}
                   disabled={
                     activeTab === 'encode' 
                       ? isEncodeDisabled() 
@@ -530,9 +563,9 @@ function App() {
       {/* Overlay mobile */}
       {!isMenuOpen && (
         <div 
-          className="menu-overlay" 
-          onClick={() => setIsMenuOpen(true)}
-          onTouchEnd={() => setIsMenuOpen(true)}
+            className={`menu-overlay ${!isMenuOpen ? 'show' : ''}`} 
+            onClick={() => setIsMenuOpen(true)}
+            onTouchEnd={() => setIsMenuOpen(true)}
         />
       )}
     </div>

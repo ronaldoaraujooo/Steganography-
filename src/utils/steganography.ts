@@ -84,37 +84,47 @@ export class Steganography {
 static async decodeRaw(imageFile: File): Promise<string> {
   return new Promise((resolve, reject) => {
     try {
+      // Limite de tamanho para mobile
+      if (imageFile.size > 5 * 1024 * 1024) { // 5MB
+        reject(new Error('Imagem muito grande para dispositivo móvel (máx 5MB)'));
+        return;
+      }
+
       const reader = new FileReader();
       
       reader.onload = (e) => {
         try {
           const img = new Image();
+          
           img.onload = () => {
             try {
+              // Limite de resolução para mobile
+              if (img.width * img.height > 2000000) { // 2 megapixels
+                reject(new Error('Resolução muito alta para dispositivo móvel'));
+                return;
+              }
+
               const canvas = document.createElement('canvas');
               canvas.width = img.width;
               canvas.height = img.height;
-              const ctx = canvas.getContext('2d');
               
+              const ctx = canvas.getContext('2d');
               if (!ctx) {
                 reject(new Error('Erro ao criar contexto'));
                 return;
               }
 
               ctx.drawImage(img, 0, 0);
+              
+              // Usar getImageData com limite de pixels
               const imageData = ctx.getImageData(0, 0, img.width, img.height);
               const data = imageData.data;
 
-              // Limitar a quantidade de pixels processados no mobile
-              const maxPixels = 5000000; // 1 milhão de pixels ~= 1000x1000
-              if (img.width * img.height > maxPixels) {
-                reject(new Error('Imagem muito grande para dispositivo móvel'));
-                return;
-              }
-
-              // Extrair LSBs
+              // Extrair LSBs (apenas canal R)
               let binaryMessage = '';
-              for (let i = 0; i < data.length && i < maxPixels * 4; i += 4) {
+              const maxBits = Math.min(data.length, 2000000); // Limite de segurança
+              
+              for (let i = 0; i < maxBits; i += 4) {
                 binaryMessage += data[i] & 1;
               }
 
@@ -141,28 +151,31 @@ static async decodeRaw(imageFile: File): Promise<string> {
 
               const message = fullMessage.substring(start + 5, end);
               resolve(message);
-            } catch (error) {
-              // 🔥 CORREÇÃO: verificar tipo do erro
-              const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido ao processar imagem';
-              reject(new Error('Erro ao processar imagem: ' + errorMessage));
+              
+            } catch (err) {
+              reject(new Error('Erro ao processar pixels: ' + err));
             }
           };
-          
-          img.onerror = () => reject(new Error('Erro ao carregar imagem'));
+
+          img.onerror = () => {
+            reject(new Error('Erro ao carregar imagem'));
+          };
+
           img.src = e.target?.result as string;
-        } catch (error) {
-          // 🔥 CORREÇÃO: verificar tipo do erro
-          const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido ao processar arquivo';
-          reject(new Error('Erro ao processar arquivo: ' + errorMessage));
+          
+        } catch (err) {
+          reject(new Error('Erro ao processar imagem: ' + err));
         }
       };
-      
-      reader.onerror = () => reject(new Error('Erro ao ler arquivo'));
+
+      reader.onerror = () => {
+        reject(new Error('Erro ao ler arquivo'));
+      };
+
       reader.readAsDataURL(imageFile);
-    } catch (error) {
-      // 🔥 CORREÇÃO: verificar tipo do erro
-      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido fatal';
-      reject(new Error('Erro fatal: ' + errorMessage));
+      
+    } catch (err) {
+      reject(new Error('Erro fatal: ' + err));
     }
   });
 }
