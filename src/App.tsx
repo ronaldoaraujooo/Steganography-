@@ -130,7 +130,7 @@ function App() {
       link.click();
 
       Swal.fire({
-        title: '✅ Imagem Gerada!',
+        title: 'Imagem Gerada!',
         html: `
           <div style="text-align: left; background: #2d3748; padding: 16px; border-radius: 12px; margin: 16px 0; color: white;">
             <p><strong style="color: #3b82f6;">Arquivo:</strong> ${metadata.cleanName}</p>

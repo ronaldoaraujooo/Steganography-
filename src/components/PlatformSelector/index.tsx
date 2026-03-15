@@ -60,15 +60,15 @@ export const PlatformSelector: React.FC<PlatformSelectorProps> = ({
 
       <div className={styles.info}>
         <div className={styles.infoRow}>
-          <span>🔧 Técnica:</span>
+          <span>Técnica:</span>
           <strong>{selectedConfig.technique}</strong>
         </div>
         <div className={styles.infoRow}>
-          <span>🔒 Correção:</span>
+          <span>Correção:</span>
           <strong>{selectedConfig.ecc}</strong>
         </div>
         <div className={styles.infoRow}>
-          <span>📊 Qualidade:</span>
+          <span>Qualidade:</span>
           <strong>{selectedConfig.qualityFactor}%</strong>
         </div>
       </div>

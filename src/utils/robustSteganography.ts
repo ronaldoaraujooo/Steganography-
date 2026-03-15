@@ -1,6 +1,3 @@
-// 🔥 REMOVIDO: import do Cipher não usado
-// import { Cipher } from './cipher';
-
 // Primeiro, definir os tipos
 export interface PlatformConfig {
   name: string;
