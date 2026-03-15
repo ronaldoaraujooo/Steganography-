@@ -60,7 +60,7 @@ const tools = [
       html: `
         <p>A imagem deve ser <strong>PNG</strong>.</p>
         <p>JPG não funciona porque destrói a mensagem escondida.</p>
-        <p>Use um conversor online para transformar JPG em PNG, se necessário.</p>
+        <p>Use nossa ferramenta de conversor, menu de ferramentas.</p>
       `,
       icon: 'warning',
       background: '#1a1e24',
@@ -235,6 +235,7 @@ const renderToolContent = () => {
       );
   }
 };
+
   return (
     <div className={`container ${!isMenuOpen ? 'menu-collapsed' : ''}`}>
       {/* Tools Menu (flutuante) - fora do grid */}
