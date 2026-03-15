@@ -112,7 +112,7 @@ O sistema conta com um painel de ferramentas laterais:
 
 ```bash
 # Clone o repositório
-git clone https://github.com/seu-usuario/steganography-cms.git
+git clone https://github.com/ronaldoaraujooo/Steganography-.git
 
 # Entre na pasta
 cd steganography-cms
