@@ -4,6 +4,7 @@ import Swal from 'sweetalert2';
 import { ToolsMenu } from './components/ToolsMenu';
 import { CaesarCipher } from './components/CaesarCipher';
 import { VigenereCipher } from './components/VigenereCipher';
+import { ImageConverter } from './components/ImageConverter';
 import { 
   Shield, 
   Lock, 
@@ -35,13 +36,14 @@ function App() {
   const [isMenuOpen, setIsMenuOpen] = useState(true);
   const [selectedTool, setSelectedTool] = useState<string | null>(null);
 
-  const tools = [
-    { id: 'caesar', name: 'Caesar Cipher', icon: <Lock size={18} /> },
-    { id: 'vigenere', name: 'Vigenère Cipher', icon: <Key size={18} /> },
-    { id: 'xor', name: 'XOR Cipher', icon: <Code size={18} /> },
-    { id: 'base64', name: 'Base64', icon: <Code size={18} /> },
-    { id: 'reverse', name: 'Reverse Text', icon: <RotateCcw size={18} /> },
-  ];
+const tools = [
+  { id: 'converter', name: 'Conversor de Imagens', icon: <ImageIcon size={18} /> },
+  { id: 'caesar', name: 'Caesar Cipher', icon: <Lock size={18} /> },
+  { id: 'vigenere', name: 'Vigenère Cipher', icon: <Key size={18} /> },
+  { id: 'xor', name: 'XOR Cipher', icon: <Code size={18} /> },
+  { id: 'base64', name: 'Base64', icon: <Code size={18} /> },
+  { id: 'reverse', name: 'Reverse Text', icon: <RotateCcw size={18} /> },
+];
 
   const handleApplyEncrypted = (text: string) => {
     setSecretText(text);
@@ -52,6 +54,22 @@ function App() {
     const file = e.target.files?.[0];
     if (!file) return;
     
+     if (!file.type.includes('png')) {
+    Swal.fire({
+      title: '⚠️ Formato inválido',
+      html: `
+        <p>A imagem deve ser <strong>PNG</strong>.</p>
+        <p>JPG não funciona porque destrói a mensagem escondida.</p>
+        <p>Use um conversor online para transformar JPG em PNG, se necessário.</p>
+      `,
+      icon: 'warning',
+      background: '#1a1e24',
+      color: '#fff',
+      confirmButtonColor: '#3b82f6',
+    });
+    return;
+  }
+
     setSelectedFile(file);
     setSecretText('');
     
@@ -60,7 +78,7 @@ function App() {
       setPreviewUrl(e.target?.result as string);
     };
     reader.readAsDataURL(file);
-
+     setSelectedFile(file);
     try {
       const cap = await Steganography.calculateCapacity(file);
       setCapacity(cap);
@@ -163,45 +181,60 @@ function App() {
   };
 
   // Renderizar ferramenta selecionada
-  const renderToolContent = () => {
-    if (!selectedTool) return null;
+ // Renderizar ferramenta selecionada
+const renderToolContent = () => {
+  if (!selectedTool) return null;
 
-    switch(selectedTool) {
-      case 'caesar':
-        return (
-          <CaesarCipher
-            initialText={secretText}
-            onEncrypt={handleApplyEncrypted}
-            onDecrypt={handleApplyEncrypted}
-          />
-        );
-      case 'vigenere':
-        return (
-          <VigenereCipher
-            initialText={secretText}
-            onEncrypt={(encrypted, key) => {
-              handleApplyEncrypted(encrypted);
-              Swal.fire({
-                title: '🔑 Chave gerada!',
-                text: `Chave: ${key}\nGuarde esta chave para descriptografar!`,
-                icon: 'info',
-                background: '#1a1e24',
-                color: '#fff',
-                confirmButtonColor: '#8b5cf6',
-              });
-            }}
-            onDecrypt={handleApplyEncrypted}
-          />
-        );
-      default:
-        return (
-          <div className="tool-placeholder">
-            <p>Ferramenta em desenvolvimento...</p>
-          </div>
-        );
-    }
-  };
-
+  switch(selectedTool) {
+    case 'converter':
+      return (
+        <ImageConverter
+          onConverted={(file, preview) => {
+            // Usar a imagem convertida na esteganografia
+            setSelectedFile(file);
+            setPreviewUrl(preview);
+            // Calcular capacidade da nova imagem
+            Steganography.calculateCapacity(file).then(cap => {
+              setCapacity(cap);
+            });
+            setSelectedTool(null); // Volta pra esteganografia
+          }}
+        />
+      );
+    case 'caesar':
+      return (
+        <CaesarCipher
+          initialText={secretText}
+          onEncrypt={handleApplyEncrypted}
+          onDecrypt={handleApplyEncrypted}
+        />
+      );
+    case 'vigenere':
+      return (
+        <VigenereCipher
+          initialText={secretText}
+          onEncrypt={(encrypted, key) => {
+            handleApplyEncrypted(encrypted);
+            Swal.fire({
+              title: '🔑 Chave gerada!',
+              text: `Chave: ${key}\nGuarde esta chave para descriptografar!`,
+              icon: 'info',
+              background: '#1a1e24',
+              color: '#fff',
+              confirmButtonColor: '#8b5cf6',
+            });
+          }}
+          onDecrypt={handleApplyEncrypted}
+        />
+      );
+    default:
+      return (
+        <div className="tool-placeholder">
+          <p>Ferramenta em desenvolvimento...</p>
+        </div>
+      );
+  }
+};
   return (
     <div className={`container ${!isMenuOpen ? 'menu-collapsed' : ''}`}>
       {/* Tools Menu (flutuante) - fora do grid */}
@@ -429,6 +462,14 @@ function App() {
           </div>
         )}
       </div>
+      {/* Overlay para mobile quando menu está aberto - ADICIONE ISSO AQUI! */}
+    {!isMenuOpen && ( // Só mostra quando o menu está ABERTO (isMenuOpen = false)
+      <div 
+        className="menu-overlay" 
+        onClick={() => setIsMenuOpen(true)} // Volta para true (fecha o menu)
+        onTouchEnd={() => setIsMenuOpen(true)}
+      />
+    )}
     </div>
   );
 }

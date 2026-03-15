@@ -81,64 +81,91 @@ export class Steganography {
   /**
    * Extrai mensagem BRUTA da imagem
    */
-  static async decodeRaw(imageFile: File): Promise<string> {
-    return new Promise((resolve, reject) => {
+static async decodeRaw(imageFile: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    try {
       const reader = new FileReader();
       
       reader.onload = (e) => {
-        const img = new Image();
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          canvas.width = img.width;
-          canvas.height = img.height;
-          const ctx = canvas.getContext('2d');
+        try {
+          const img = new Image();
+          img.onload = () => {
+            try {
+              const canvas = document.createElement('canvas');
+              canvas.width = img.width;
+              canvas.height = img.height;
+              const ctx = canvas.getContext('2d');
+              
+              if (!ctx) {
+                reject(new Error('Erro ao criar contexto'));
+                return;
+              }
+
+              ctx.drawImage(img, 0, 0);
+              const imageData = ctx.getImageData(0, 0, img.width, img.height);
+              const data = imageData.data;
+
+              // Limitar a quantidade de pixels processados no mobile
+              const maxPixels = 5000000; // 1 milhão de pixels ~= 1000x1000
+              if (img.width * img.height > maxPixels) {
+                reject(new Error('Imagem muito grande para dispositivo móvel'));
+                return;
+              }
+
+              // Extrair LSBs
+              let binaryMessage = '';
+              for (let i = 0; i < data.length && i < maxPixels * 4; i += 4) {
+                binaryMessage += data[i] & 1;
+              }
+
+              // Converter para texto
+              let fullMessage = '';
+              for (let i = 0; i < binaryMessage.length; i += 8) {
+                if (i + 8 > binaryMessage.length) break;
+                const byte = binaryMessage.slice(i, i + 8);
+                fullMessage += String.fromCharCode(parseInt(byte, 2));
+              }
+
+              // Procurar marcadores
+              const start = fullMessage.indexOf('§MSG§');
+              if (start === -1) {
+                reject(new Error('Nenhuma mensagem encontrada'));
+                return;
+              }
+
+              const end = fullMessage.indexOf('§FIM§', start);
+              if (end === -1) {
+                reject(new Error('Mensagem corrompida'));
+                return;
+              }
+
+              const message = fullMessage.substring(start + 5, end);
+              resolve(message);
+            } catch (error) {
+              // 🔥 CORREÇÃO: verificar tipo do erro
+              const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido ao processar imagem';
+              reject(new Error('Erro ao processar imagem: ' + errorMessage));
+            }
+          };
           
-          if (!ctx) {
-            reject(new Error('Erro ao criar contexto'));
-            return;
-          }
-
-          ctx.drawImage(img, 0, 0);
-          const imageData = ctx.getImageData(0, 0, img.width, img.height);
-          const data = imageData.data;
-
-          // Extrair LSBs
-          let binaryMessage = '';
-          for (let i = 0; i < data.length; i += 4) {
-            binaryMessage += data[i] & 1;
-          }
-
-          // Converter para texto
-          let fullMessage = '';
-          for (let i = 0; i < binaryMessage.length; i += 8) {
-            if (i + 8 > binaryMessage.length) break;
-            const byte = binaryMessage.slice(i, i + 8);
-            fullMessage += String.fromCharCode(parseInt(byte, 2));
-          }
-
-          // Procurar marcadores
-          const start = fullMessage.indexOf('§MSG§');
-          if (start === -1) {
-            reject(new Error('Nenhuma mensagem encontrada'));
-            return;
-          }
-
-          const end = fullMessage.indexOf('§FIM§', start);
-          if (end === -1) {
-            reject(new Error('Mensagem corrompida'));
-            return;
-          }
-
-          const message = fullMessage.substring(start + 5, end);
-          resolve(message);
-        };
-        
-        img.src = e.target?.result as string;
+          img.onerror = () => reject(new Error('Erro ao carregar imagem'));
+          img.src = e.target?.result as string;
+        } catch (error) {
+          // 🔥 CORREÇÃO: verificar tipo do erro
+          const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido ao processar arquivo';
+          reject(new Error('Erro ao processar arquivo: ' + errorMessage));
+        }
       };
       
+      reader.onerror = () => reject(new Error('Erro ao ler arquivo'));
       reader.readAsDataURL(imageFile);
-    });
-  }
+    } catch (error) {
+      // 🔥 CORREÇÃO: verificar tipo do erro
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido fatal';
+      reject(new Error('Erro fatal: ' + errorMessage));
+    }
+  });
+}
 
   static async calculateCapacity(imageFile: File): Promise<number> {
     return new Promise((resolve) => {
