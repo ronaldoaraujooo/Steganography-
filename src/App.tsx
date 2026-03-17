@@ -10,7 +10,10 @@ import { XorCipher } from './components/XorCipher';
 import { Base64Tool } from './components/Base64Tool';
 import { ReverseText } from './components/ReverseText';
 import { PDFDemo } from './components/PDFDemo';
-import { 
+import { ImageSearch } from './components/OsintTools/ImageSearch';
+import { MetadataExtractor } from './components/OsintTools/MetadataExtractor';
+import {
+  Search, 
   Shield, 
   Lock, 
   Unlock, 
@@ -48,12 +51,15 @@ function App() {
   // ========== FERRAMENTAS ==========
   const tools = [
     { id: 'converter', name: 'Conversor de Imagens', icon: <ImageIcon size={18} /> },
+    { id: 'reverse', name: 'Reverse Text', icon: <RotateCcw size={18} /> },
+    { id: 'pdf-demo', name: 'PDF Steganography', icon: <FileText size={18} /> },
+    { id: 'image-search', name: 'Busca Reversa', icon: <Search size={18} /> },
+    { id: 'metadata-extractor', name: 'Extrator de Metadados', icon: <BarChart3 size={18} /> },
     { id: 'caesar', name: 'Caesar Cipher', icon: <Lock size={18} /> },
     { id: 'vigenere', name: 'Vigenère Cipher', icon: <Key size={18} /> },
     { id: 'xor', name: 'XOR Cipher', icon: <Code size={18} /> },
     { id: 'base64', name: 'Base64', icon: <Code size={18} /> },
-    { id: 'reverse', name: 'Reverse Text', icon: <RotateCcw size={18} /> },
-    { id: 'pdf-demo', name: 'PDF Steganography', icon: <FileText size={18} /> },
+    
   ];
 
   // ========== HANDLERS ==========
@@ -247,6 +253,10 @@ function App() {
     if (!selectedTool) return null;
 
     switch(selectedTool) {
+        case 'metadata-extractor':
+        return <MetadataExtractor />;
+      case 'image-search':
+        return <ImageSearch />;
       case 'pdf-demo':
         return <PDFDemo />;
       case 'reverse':
